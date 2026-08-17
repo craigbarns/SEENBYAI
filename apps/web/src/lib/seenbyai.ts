@@ -32,7 +32,7 @@ export interface DashboardData {
   recommendations: Recommendation[];
 }
 
-const API_BASE_URL = process.env.SEENBYAI_API_URL ?? "http://127.0.0.1:8001";
+const API_BASE_URL = process.env.SEENBYAI_API_URL ?? "http://127.0.0.1:8000";
 
 export async function getDashboardData(siteId: string): Promise<DashboardData | null> {
   try {

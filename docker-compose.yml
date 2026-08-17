@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -33,20 +31,22 @@ services:
       - ./apps/api:/app/apps/api
       - ./packages:/app/packages
 
-  worker:
-    build:
-      context: .
-      dockerfile: docker/worker.Dockerfile
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/seenbyai
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - ./apps/api:/app/apps/api
-      - ./packages:/app/packages
-      - ./workers:/app/workers
+  # Le service worker (Celery) sera réactivé quand workers/scanner contiendra
+  # une application Celery. Pour l'instant le dossier est vide.
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/worker.Dockerfile
+  #   environment:
+  #     - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/seenbyai
+  #     - REDIS_URL=redis://redis:6379/0
+  #   depends_on:
+  #     - db
+  #     - redis
+  #   volumes:
+  #     - ./apps/api:/app/apps/api
+  #     - ./packages:/app/packages
+  #     - ./workers:/app/workers
 
 volumes:
   db_data:
