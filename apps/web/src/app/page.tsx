@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
-  Bot,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/logo";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 const structuredData = {
@@ -90,9 +90,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/88 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
           <Link className="group flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:-rotate-3">
-              <Bot className="size-5" aria-hidden="true" />
-            </span>
+            <LogoMark className="size-9 transition-transform group-hover:-rotate-3" />
             <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
           </Link>
 
@@ -164,7 +162,7 @@ export default function Home() {
               <div className="relative overflow-hidden rounded-[1.75rem] border border-foreground/10 bg-[#173b35] p-3 shadow-2xl shadow-primary/20 sm:p-4">
                 <div className="flex items-center justify-between px-3 py-2 text-primary-foreground/65">
                   <div className="flex items-center gap-2 text-sm font-bold text-white">
-                    <Bot className="size-4" aria-hidden="true" />
+                    <LogoMark variant="on-dark" className="size-4" />
                     Visibility analysis
                   </div>
                   <div className="flex items-center gap-2 text-xs font-semibold">
@@ -346,7 +344,7 @@ export default function Home() {
       <footer className="border-t border-foreground/8 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-9 sm:px-8 md:flex-row md:items-center lg:px-10">
           <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="LLM Rank, home">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Bot className="size-4" aria-hidden="true" /></span>
+            <LogoMark className="size-8" />
             LLM Rank
           </Link>
           <p className="text-sm text-muted-foreground md:ml-3">© 2026 LLM Rank. AI visibility, made actionable.</p>

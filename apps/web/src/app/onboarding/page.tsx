@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  Bot,
   Check,
   CircleAlert,
   Loader2,
@@ -15,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { LogoMark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,9 +106,7 @@ export default function OnboardingPage() {
 
         <div className="relative">
           <Link className="inline-flex items-center gap-2.5" href="/" aria-label="LLM Rank, back to home">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-white/12">
-              <Bot className="size-5" aria-hidden="true" />
-            </span>
+            <LogoMark variant="on-dark" className="size-10" />
             <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
           </Link>
 
@@ -142,9 +140,7 @@ export default function OnboardingPage() {
       <section className="flex min-h-screen min-w-0 flex-col">
         <header className="flex h-[72px] items-center justify-between border-b border-foreground/8 px-5 sm:px-8 lg:px-10">
           <Link className="flex items-center gap-2 font-extrabold lg:hidden" href="/">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Bot className="size-5" aria-hidden="true" />
-            </span>
+            <LogoMark className="size-9" />
             LLM Rank
           </Link>
           <Link className="hidden items-center gap-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground lg:flex" href="/">

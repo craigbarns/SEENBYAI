@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Bot,
   Check,
   CheckCircle2,
   CircleAlert,
@@ -22,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { LogoMark } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -108,9 +108,7 @@ export default async function DashboardPage({
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
           <Link className="flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Bot className="size-5" aria-hidden="true" />
-            </span>
+            <LogoMark className="size-9" />
             <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
           </Link>
           <Badge variant="outline" className="ml-auto border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-800">
