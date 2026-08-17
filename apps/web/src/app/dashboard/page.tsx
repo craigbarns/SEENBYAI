@@ -30,7 +30,7 @@ import { getDashboardData, type Priority } from "@/lib/seenbyai";
 
 export const metadata: Metadata = {
   title: "AI Visibility Report",
-  description: "Your visibility score, mentions and SeenByAI action plan.",
+  description: "Your visibility score, mentions and LLM Rank action plan.",
   robots: {
     index: false,
     follow: false,
@@ -107,11 +107,11 @@ export default async function DashboardPage({
     <div className="min-h-screen bg-[#f8f8f3] pb-20">
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
-          <Link className="flex items-center gap-2.5" href="/" aria-label="SeenByAI, home">
+          <Link className="flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
             <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Bot className="size-5" aria-hidden="true" />
             </span>
-            <span className="text-xl font-extrabold tracking-[-0.04em]">SeenByAI</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
           </Link>
           <Badge variant="outline" className="ml-auto border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-800">
             <Sparkles className="mr-1.5 size-3" aria-hidden="true" />

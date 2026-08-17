@@ -10,8 +10,8 @@ from pydantic import AnyHttpUrl, BaseModel, Field
 
 
 app = FastAPI(
-    title="SeenByAI API",
-    description="Backend API for the SeenByAI visibility simulator",
+    title="LLM Rank API",
+    description="Backend API for the LLM Rank visibility simulator",
     version="1.1.0",
 )
 

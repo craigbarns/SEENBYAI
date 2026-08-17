@@ -1,4 +1,4 @@
-# SeenByAI
+# LLM Rank (ex-SeenByAI)
 
 **"Est-ce que l’IA recommande votre entreprise ?"**
 

@@ -39,7 +39,7 @@ const structuredData = {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       description:
-        "SeenByAI measures how visible a local business is in AI answers from ChatGPT, Claude and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
+        "LLM Rank measures how visible a local business is in AI answers from ChatGPT, Claude and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
       offers: {
         "@type": "Offer",
         price: "0",
@@ -63,7 +63,7 @@ const steps = [
     number: "02",
     title: "We simulate the searches",
     description:
-      "SeenByAI measures your mentions and your competitors' across ChatGPT, Claude and Perplexity.",
+      "LLM Rank measures your mentions and your competitors' across ChatGPT, Claude and Perplexity.",
   },
   {
     icon: ListChecks,
@@ -89,11 +89,11 @@ export default function Home() {
       />
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/88 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
-          <Link className="group flex items-center gap-2.5" href="/" aria-label="SeenByAI, home">
+          <Link className="group flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
             <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:-rotate-3">
               <Bot className="size-5" aria-hidden="true" />
             </span>
-            <span className="text-xl font-extrabold tracking-[-0.04em]">SeenByAI</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
           </Link>
 
           <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Main navigation">
@@ -137,7 +137,7 @@ export default function Home() {
               </h1>
 
               <p className="mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
-                SeenByAI tests the queries that matter for your business, benchmarks your competitors and turns the results into concrete actions.
+                LLM Rank tests the queries that matter for your business, benchmarks your competitors and turns the results into concrete actions.
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -345,11 +345,11 @@ export default function Home() {
 
       <footer className="border-t border-foreground/8 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-9 sm:px-8 md:flex-row md:items-center lg:px-10">
-          <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="SeenByAI, home">
+          <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="LLM Rank, home">
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Bot className="size-4" aria-hidden="true" /></span>
-            SeenByAI
+            LLM Rank
           </Link>
-          <p className="text-sm text-muted-foreground md:ml-3">© 2026 SeenByAI. AI visibility, made actionable.</p>
+          <p className="text-sm text-muted-foreground md:ml-3">© 2026 LLM Rank. AI visibility, made actionable.</p>
           <nav className="flex gap-5 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Footer navigation">
             <Link className="hover:text-foreground" href="#method">How it works</Link>
             <Link className="hover:text-foreground" href="#pricing">Pricing</Link>

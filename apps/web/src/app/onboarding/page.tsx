@@ -105,11 +105,11 @@ export default function OnboardingPage() {
         <div className="pointer-events-none absolute -bottom-44 -right-24 size-[500px] rounded-full bg-emerald-300/10 blur-3xl" aria-hidden="true" />
 
         <div className="relative">
-          <Link className="inline-flex items-center gap-2.5" href="/" aria-label="SeenByAI, back to home">
+          <Link className="inline-flex items-center gap-2.5" href="/" aria-label="LLM Rank, back to home">
             <span className="flex size-10 items-center justify-center rounded-xl bg-white/12">
               <Bot className="size-5" aria-hidden="true" />
             </span>
-            <span className="text-xl font-extrabold tracking-[-0.04em]">SeenByAI</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
           </Link>
 
           <div className="mt-20 max-w-lg">
@@ -145,7 +145,7 @@ export default function OnboardingPage() {
             <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Bot className="size-5" aria-hidden="true" />
             </span>
-            SeenByAI
+            LLM Rank
           </Link>
           <Link className="hidden items-center gap-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground lg:flex" href="/">
             <ArrowLeft className="size-4" aria-hidden="true" /> Back to home
