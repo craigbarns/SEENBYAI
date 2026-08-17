@@ -243,6 +243,26 @@ export default async function DashboardPage({
           </div>
         </section>
 
+        {data.unlocked && data.history.length > 1 && (
+          <section className="rounded-[1.75rem] border border-foreground/8 bg-white p-6 shadow-sm sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div><p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Weekly tracking</p><h2 className="mt-2 text-2xl font-extrabold tracking-[-0.035em]">Score history</h2></div>
+              <TrendingUp className="size-5 text-muted-foreground" aria-hidden="true" />
+            </div>
+            <div className="mt-7 flex items-end gap-3 overflow-x-auto pb-2" aria-label="Visibility score over time">
+              {data.history.map((point, index) => (
+                <div className="flex min-w-14 flex-col items-center gap-2" key={`${point.date}-${index}`}>
+                  <span className="text-sm font-extrabold tabular-nums">{point.score}</span>
+                  <div className="flex h-28 w-9 items-end overflow-hidden rounded-lg bg-foreground/6">
+                    <div className="w-full rounded-lg bg-emerald-600" style={{ height: `${Math.max(4, point.score)}%` }} />
+                  </div>
+                  <span className="text-[11px] font-bold text-muted-foreground">{point.date.slice(5)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="pt-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div><p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Action plan</p><h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">Your next moves</h2><p className="mt-2 text-muted-foreground">Ranked by urgency and estimated impact.</p></div>

@@ -32,6 +32,14 @@ export interface DashboardData {
   recommendations: Recommendation[];
   mode: "live" | "simulation";
   unlocked: boolean;
+  history: ScorePoint[];
+}
+
+export interface ScorePoint {
+  score: number;
+  brand_mentions: number;
+  total_queries: number;
+  date: string;
 }
 
 const API_BASE_URL = process.env.SEENBYAI_API_URL ?? "http://127.0.0.1:8000";

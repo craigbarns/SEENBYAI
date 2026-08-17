@@ -69,6 +69,18 @@ def init_db() -> None:
         conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS unlocked BOOLEAN NOT NULL DEFAULT FALSE"))
         conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS stripe_customer TEXT"))
         conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS stripe_subscription TEXT"))
+        conn.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS score_history ("
+                "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, "
+                "site_id UUID NOT NULL, "
+                "score INTEGER NOT NULL, "
+                "brand_mentions INTEGER NOT NULL, "
+                "total_queries INTEGER NOT NULL, "
+                "created_at TIMESTAMPTZ DEFAULT now())"
+            )
+        )
+        conn.execute(text("CREATE INDEX IF NOT EXISTS score_history_site_idx ON score_history (site_id, created_at)"))
 
 
 class OnboardingRequest(BaseModel):
@@ -95,12 +107,20 @@ class Recommendation(BaseModel):
     estimated_impact: str
 
 
+class ScorePoint(BaseModel):
+    score: int
+    brand_mentions: int
+    total_queries: int
+    date: str
+
+
 class DashboardData(BaseModel):
     site_id: str
     company_name: str
     website_url: str
     city: str
     industry: str
+    services: Optional[str] = None
     visibility_score: int
     total_queries: int
     brand_mentions: int
@@ -110,6 +130,7 @@ class DashboardData(BaseModel):
     recommendations: List[Recommendation]
     mode: str = "simulation"
     unlocked: bool = True
+    history: List[ScorePoint] = []
 
 
 # In-memory fallback when no database is configured (local development).
@@ -152,7 +173,43 @@ def load_report(site_id: str) -> Optional[DashboardData]:
         return None
     dashboard = DashboardData.model_validate(row[0])
     dashboard.unlocked = bool(row[1])
+    dashboard.history = load_history(site_id)
     return dashboard
+
+
+def record_history(dashboard: DashboardData) -> None:
+    if db_engine is None or dashboard.mode != "live":
+        return
+    with db_engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO score_history (site_id, score, brand_mentions, total_queries) "
+                "VALUES (:site_id, :score, :mentions, :total)"
+            ),
+            {
+                "site_id": dashboard.site_id,
+                "score": dashboard.visibility_score,
+                "mentions": dashboard.brand_mentions,
+                "total": dashboard.total_queries,
+            },
+        )
+
+
+def load_history(site_id: str) -> List[ScorePoint]:
+    if db_engine is None:
+        return []
+    with db_engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT score, brand_mentions, total_queries, created_at FROM score_history "
+                "WHERE site_id = :site_id ORDER BY created_at DESC LIMIT 12"
+            ),
+            {"site_id": site_id},
+        ).fetchall()
+    return [
+        ScorePoint(score=row[0], brand_mentions=row[1], total_queries=row[2], date=row[3].date().isoformat())
+        for row in reversed(rows)
+    ]
 
 
 def get_report_email(site_id: str) -> Optional[str]:
@@ -420,6 +477,7 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         website_url=str(request.websiteUrl),
         city=request.city.strip().title(),
         industry=request.industry.strip(),
+        services=request.services,
         visibility_score=round((brand_mentions / len(results)) * 100),
         total_queries=len(results),
         brand_mentions=brand_mentions,
@@ -479,6 +537,7 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
         website_url=str(request.websiteUrl),
         city=city,
         industry=industry,
+        services=request.services,
         visibility_score=round((brand_mentions / len(results)) * 100),
         total_queries=len(results),
         brand_mentions=brand_mentions,
@@ -488,6 +547,69 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
         recommendations=build_recommendations(request),
         mode="simulation",
     )
+
+
+# ---------------------------------------------------------------------------
+# Weekly re-scans for paying subscribers
+# ---------------------------------------------------------------------------
+
+RESCAN_AFTER_DAYS = 7
+
+
+def reports_due_for_rescan() -> List[str]:
+    with db_engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT r.site_id::text FROM reports r "
+                "WHERE r.unlocked = TRUE AND COALESCE("
+                "(SELECT max(h.created_at) FROM score_history h WHERE h.site_id = r.site_id), "
+                "r.created_at) < now() - make_interval(days => :days) "
+                "LIMIT 20"
+            ),
+            {"days": RESCAN_AFTER_DAYS},
+        ).fetchall()
+    return [row[0] for row in rows]
+
+
+async def rescan_report(site_id: str) -> None:
+    previous = await asyncio.to_thread(load_report, site_id)
+    if previous is None:
+        return
+    email = await asyncio.to_thread(get_report_email, site_id)
+    request = OnboardingRequest(
+        companyName=previous.company_name,
+        websiteUrl=previous.website_url,
+        email=email or "rescan@llm-rank.app",
+        city=previous.city,
+        industry=previous.industry,
+        services=previous.services,
+    )
+    dashboard = await run_live_scan(site_id, request)
+    dashboard.unlocked = True
+    await asyncio.to_thread(save_report, dashboard, None)
+    await asyncio.to_thread(record_history, dashboard)
+
+
+async def weekly_rescan_loop() -> None:
+    while True:
+        await asyncio.sleep(3600)
+        # Re-scans only make sense with real engines, persistence and actual
+        # paying subscribers (unlocked reports only exist when billing is on).
+        if not (LIVE_MODE and BILLING_ENABLED and db_engine is not None):
+            continue
+        try:
+            for site_id in await asyncio.to_thread(reports_due_for_rescan):
+                try:
+                    await rescan_report(site_id)
+                except Exception:
+                    continue
+        except Exception:
+            continue
+
+
+@app.on_event("startup")
+async def start_rescan_scheduler() -> None:
+    asyncio.create_task(weekly_rescan_loop())
 
 
 @app.get("/api/health")
@@ -515,6 +637,7 @@ async def onboard_site(request: OnboardingRequest):
         dashboard = generate_mock_dashboard_data(site_id, request)
     dashboard.unlocked = not BILLING_ENABLED
     save_report(dashboard, email=request.email)
+    record_history(dashboard)
     return {"site_id": site_id, "status": "completed", "mode": dashboard.mode}
 
 
