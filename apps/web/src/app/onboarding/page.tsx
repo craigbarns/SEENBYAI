@@ -250,7 +250,7 @@ export default function OnboardingPage() {
 
               <Button className="h-14 w-full rounded-xl text-base font-extrabold shadow-lg shadow-primary/12" type="submit" disabled={loading}>
                 {loading ? (
-                  <><Loader2 className="mr-2 size-5 animate-spin" aria-hidden="true" /> Building your report…</>
+                  <><Loader2 className="mr-2 size-5 animate-spin" aria-hidden="true" /> Scanning AI engines… this can take up to a minute</>
                 ) : (
                   <>Start my free analysis <ArrowRight className="ml-2 size-5" aria-hidden="true" /></>
                 )}

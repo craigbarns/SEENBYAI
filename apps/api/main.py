@@ -1,18 +1,27 @@
-from collections import Counter
+import asyncio
+import json
 import os
 import random
+import re
+import unicodedata
 import uuid
+from collections import Counter
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AnyHttpUrl, BaseModel, Field
+from sqlalchemy import create_engine, text
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+LIVE_MODE = bool(OPENAI_API_KEY)
 
 app = FastAPI(
     title="LLM Rank API",
-    description="Backend API for the LLM Rank visibility simulator",
-    version="1.1.0",
+    description="Backend API for LLM Rank — AI visibility scans for local businesses",
+    version="2.0.0",
 )
 
 allowed_origins = [
@@ -31,6 +40,23 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
+
+db_engine = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
+
+
+@app.on_event("startup")
+def init_db() -> None:
+    if db_engine is None:
+        return
+    with db_engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS reports ("
+                "site_id UUID PRIMARY KEY, "
+                "payload JSONB NOT NULL, "
+                "created_at TIMESTAMPTZ DEFAULT now())"
+            )
+        )
 
 
 class OnboardingRequest(BaseModel):
@@ -69,20 +95,43 @@ class DashboardData(BaseModel):
     top_competitor_mentions: int
     queries: List[QueryResult]
     recommendations: List[Recommendation]
+    mode: str = "simulation"
 
 
-# The MVP keeps reports in memory. The seeded generator makes a given report stable
-# for its whole lifetime, which is more useful when reviewing the same dashboard.
-MOCK_DB: dict[str, DashboardData] = {}
+# In-memory fallback when no database is configured (local development).
+MEMORY_DB: dict[str, DashboardData] = {}
 
 
-def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> DashboardData:
-    rng = random.Random(site_id)
+def save_report(dashboard: DashboardData) -> None:
+    if db_engine is None:
+        MEMORY_DB[dashboard.site_id] = dashboard
+        return
+    with db_engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO reports (site_id, payload) VALUES (:site_id, CAST(:payload AS jsonb)) "
+                "ON CONFLICT (site_id) DO UPDATE SET payload = EXCLUDED.payload"
+            ),
+            {"site_id": dashboard.site_id, "payload": dashboard.model_dump_json()},
+        )
+
+
+def load_report(site_id: str) -> Optional[DashboardData]:
+    if db_engine is None:
+        return MEMORY_DB.get(site_id)
+    with db_engine.begin() as conn:
+        row = conn.execute(
+            text("SELECT payload FROM reports WHERE site_id = :site_id"),
+            {"site_id": site_id},
+        ).fetchone()
+    return DashboardData.model_validate(row[0]) if row else None
+
+
+def build_queries(request: OnboardingRequest) -> List[str]:
     city = request.city.strip().title()
     industry = request.industry.strip()
     service = (request.services or industry).split(",")[0].strip()
-    engines = ["ChatGPT", "Perplexity", "Claude"]
-    base_queries = [
+    return [
         f"Who is the best {industry.lower()} professional in {city}?",
         f"Who would you recommend for {service.lower()} in {city}?",
         f"Which {industry.lower()} companies are reliable in {city}?",
@@ -94,6 +143,213 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
         f"Which local {industry.lower()} expert should I choose in {city}?",
         f"Reviews and recommendations for {service.lower()} in {city}",
     ]
+
+
+def build_recommendations(request: OnboardingRequest) -> List[Recommendation]:
+    city = request.city.strip().title()
+    industry = request.industry.strip()
+    service = (request.services or industry).split(",")[0].strip()
+    return [
+        Recommendation(
+            title="Create a local FAQ page",
+            description=(
+                f"Answer the questions customers actually ask about {service.lower()} "
+                f"and the areas you serve around {city}."
+            ),
+            priority="high",
+            estimated_impact="high",
+        ),
+        Recommendation(
+            title="Add LocalBusiness structured data",
+            description=(
+                "Mark up your business name, address, phone number and services "
+                "so AI engines can verify this information."
+            ),
+            priority="medium",
+            estimated_impact="medium",
+        ),
+        Recommendation(
+            title="Strengthen your Services page",
+            description=(
+                f"Describe your {industry.lower()} specialties, proof of expertise "
+                f"and local projects completed in {city}."
+            ),
+            priority="low",
+            estimated_impact="low",
+        ),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Live scan (real AI engine answers)
+# ---------------------------------------------------------------------------
+
+ANSWER_SYSTEM_PROMPT = (
+    "You are a helpful assistant answering a consumer looking for a local business. "
+    "Answer naturally and concisely. Name specific local businesses when you know of any; "
+    "if you don't know specific businesses, say so and give general advice."
+)
+
+EXTRACTION_SYSTEM_PROMPT = (
+    "You analyze AI assistant answers to local business recommendation questions. "
+    "For each numbered answer, list the specific business names explicitly mentioned "
+    "(company names only, not generic terms, directories or platforms like Yelp or Google), "
+    "and say whether the target brand is mentioned, including close or partial variants of its name. "
+    'Respond with JSON only: {"results": [{"index": 1, "brand_mentioned": false, "businesses": ["..."]}]}'
+)
+
+
+def normalize_name(value: str) -> str:
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def brand_variants(name: str) -> List[str]:
+    base = name.strip()
+    no_suffix = re.sub(
+        r"\b(llc|inc|corp|co|company|ltd|group|services?)\b\.?", "", base, flags=re.IGNORECASE
+    ).strip()
+    variants = {normalize_name(base)}
+    if no_suffix:
+        variants.add(normalize_name(no_suffix))
+    return [variant for variant in variants if len(variant) >= 3]
+
+
+def brand_in_text(variants: List[str], answer: str) -> bool:
+    normalized = normalize_name(answer)
+    return any(variant in normalized for variant in variants)
+
+
+async def ask_engine(client, query: str) -> Optional[str]:
+    try:
+        response = await client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
+                {"role": "user", "content": query},
+            ],
+            max_tokens=400,
+            temperature=0.7,
+            timeout=45,
+        )
+        return response.choices[0].message.content or ""
+    except Exception:
+        return None
+
+
+async def extract_mentions(client, brand: str, answers: List[str]) -> Optional[list]:
+    numbered = "\n\n".join(f"Answer {index + 1}:\n{answer}" for index, answer in enumerate(answers))
+    try:
+        response = await client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
+                {"role": "user", "content": f'Target brand: "{brand}"\n\n{numbered}'},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=1500,
+            temperature=0,
+            timeout=60,
+        )
+        payload = json.loads(response.choices[0].message.content or "{}")
+        results = payload.get("results")
+        return results if isinstance(results, list) else None
+    except Exception:
+        return None
+
+
+async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardData:
+    from openai import AsyncOpenAI
+
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    queries = build_queries(request)
+    semaphore = asyncio.Semaphore(5)
+
+    async def guarded_ask(query: str) -> Optional[str]:
+        async with semaphore:
+            return await ask_engine(client, query)
+
+    answers = await asyncio.gather(*(guarded_ask(query) for query in queries))
+    answered = [(query, answer) for query, answer in zip(queries, answers) if answer]
+    if not answered:
+        raise HTTPException(status_code=502, detail="AI engines are unreachable right now, please retry")
+
+    extraction = await extract_mentions(client, request.companyName, [answer for _, answer in answered])
+    extraction_by_index = {}
+    if extraction:
+        for item in extraction:
+            if isinstance(item, dict) and isinstance(item.get("index"), int):
+                extraction_by_index[item["index"] - 1] = item
+
+    variants = brand_variants(request.companyName)
+    results: list[QueryResult] = []
+    brand_mentions = 0
+    competitor_mentions: Counter[str] = Counter()
+
+    for index, (query, answer) in enumerate(answered):
+        local_mentioned = brand_in_text(variants, answer)
+        extracted = extraction_by_index.get(index)
+        if extracted is not None:
+            llm_mentioned = bool(extracted.get("brand_mentioned"))
+            mentioned = llm_mentioned or local_mentioned
+            confidence = 0.95 if llm_mentioned == local_mentioned else 0.75
+            businesses = [
+                name.strip()
+                for name in extracted.get("businesses", [])
+                if isinstance(name, str) and name.strip()
+            ]
+        else:
+            mentioned = local_mentioned
+            confidence = 0.7
+            businesses = []
+
+        competitors = [name for name in businesses if not brand_in_text(variants, name)][:3]
+        if mentioned:
+            brand_mentions += 1
+        competitor_mentions.update(competitors)
+
+        results.append(
+            QueryResult(
+                query=query,
+                engine="ChatGPT",
+                brand_mentioned=mentioned,
+                competitors_detected=competitors,
+                confidence=confidence,
+            )
+        )
+
+    if competitor_mentions:
+        top_competitor, top_competitor_mentions = competitor_mentions.most_common(1)[0]
+    else:
+        top_competitor, top_competitor_mentions = "No competitor detected", 0
+
+    return DashboardData(
+        site_id=site_id,
+        company_name=request.companyName.strip(),
+        website_url=str(request.websiteUrl),
+        city=request.city.strip().title(),
+        industry=request.industry.strip(),
+        visibility_score=round((brand_mentions / len(results)) * 100),
+        total_queries=len(results),
+        brand_mentions=brand_mentions,
+        top_competitor=top_competitor,
+        top_competitor_mentions=top_competitor_mentions,
+        queries=results,
+        recommendations=build_recommendations(request),
+        mode="live",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Simulation fallback (used when no AI engine API key is configured)
+# ---------------------------------------------------------------------------
+
+def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> DashboardData:
+    rng = random.Random(site_id)
+    city = request.city.strip().title()
+    industry = request.industry.strip()
+    engines = ["ChatGPT", "Perplexity", "Claude"]
+    base_queries = build_queries(request)
     competitors = [
         f"{city} {industry.title()} Experts",
         f"{city} Pro Services",
@@ -125,70 +381,53 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
         )
 
     top_competitor, top_competitor_mentions = competitor_mentions.most_common(1)[0]
-    visibility_score = round((brand_mentions / len(results)) * 100)
-    recommendations = [
-        Recommendation(
-            title="Create a local FAQ page",
-            description=(
-                f"Answer the questions customers actually ask about {service.lower()} "
-                f"and the areas you serve around {city}."
-            ),
-            priority="high",
-            estimated_impact="high",
-        ),
-        Recommendation(
-            title="Add LocalBusiness structured data",
-            description=(
-                "Mark up your business name, address, phone number and services "
-                "so AI engines can verify this information."
-            ),
-            priority="medium",
-            estimated_impact="medium",
-        ),
-        Recommendation(
-            title="Strengthen your Services page",
-            description=(
-                f"Describe your {industry.lower()} specialties, proof of expertise "
-                f"and local projects completed in {city}."
-            ),
-            priority="low",
-            estimated_impact="low",
-        ),
-    ]
 
-    dashboard = DashboardData(
+    return DashboardData(
         site_id=site_id,
         company_name=request.companyName.strip(),
         website_url=str(request.websiteUrl),
         city=city,
         industry=industry,
-        visibility_score=visibility_score,
+        visibility_score=round((brand_mentions / len(results)) * 100),
         total_queries=len(results),
         brand_mentions=brand_mentions,
         top_competitor=top_competitor,
         top_competitor_mentions=top_competitor_mentions,
         queries=results,
-        recommendations=recommendations,
+        recommendations=build_recommendations(request),
+        mode="simulation",
     )
-    MOCK_DB[site_id] = dashboard
-    return dashboard
 
 
 @app.get("/api/health")
 def healthcheck():
-    return {"status": "ok", "mode": "simulation"}
+    return {"status": "ok", "mode": "live" if LIVE_MODE else "simulation", "persistent": db_engine is not None}
 
 
 @app.post("/api/onboarding")
-def onboard_site(request: OnboardingRequest):
+async def onboard_site(request: OnboardingRequest):
     site_id = str(uuid.uuid4())
-    generate_mock_dashboard_data(site_id, request)
-    return {"site_id": site_id, "status": "completed"}
+    dashboard = None
+    if LIVE_MODE:
+        try:
+            dashboard = await run_live_scan(site_id, request)
+        except HTTPException:
+            # Live engines unavailable (no credits, outage…): degrade to a
+            # clearly-labeled simulation instead of failing the onboarding.
+            dashboard = None
+    if dashboard is None:
+        dashboard = generate_mock_dashboard_data(site_id, request)
+    save_report(dashboard)
+    return {"site_id": site_id, "status": "completed", "mode": dashboard.mode}
 
 
 @app.get("/api/dashboard/{site_id}", response_model=DashboardData)
 def get_dashboard(site_id: str):
-    dashboard = MOCK_DB.get(site_id)
+    try:
+        uuid.UUID(site_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Report not found")
+    dashboard = load_report(site_id)
     if dashboard is None:
         raise HTTPException(status_code=404, detail="Report not found")
     return dashboard

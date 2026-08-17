@@ -97,7 +97,8 @@ export default async function DashboardPage({
   const mentionRate = data.total_queries > 0 ? Math.round((data.brand_mentions / data.total_queries) * 100) : 0;
   const competitorGap = data.top_competitor_mentions - data.brand_mentions;
   const scoreSummary = getScoreSummary(safeScore);
-  const engineStats = ["ChatGPT", "Perplexity", "Claude"].map((engine) => {
+  const engineNames = Array.from(new Set(data.queries.map((query) => query.engine)));
+  const engineStats = engineNames.map((engine) => {
     const queries = data.queries.filter((query) => query.engine === engine);
     const mentions = queries.filter((query) => query.brand_mentioned).length;
     return { engine, mentions, total: queries.length, rate: queries.length ? Math.round((mentions / queries.length) * 100) : 0 };
@@ -111,10 +112,17 @@ export default async function DashboardPage({
             <LogoMark className="size-9" />
             <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
           </Link>
-          <Badge variant="outline" className="ml-auto border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-800">
-            <Sparkles className="mr-1.5 size-3" aria-hidden="true" />
-            <span className="hidden sm:inline">Simulation report</span><span className="sm:hidden">Simulation</span>
-          </Badge>
+          {data?.mode === "live" ? (
+            <Badge variant="outline" className="ml-auto border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800">
+              <Sparkles className="mr-1.5 size-3" aria-hidden="true" />
+              <span className="hidden sm:inline">Live AI report</span><span className="sm:hidden">Live</span>
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="ml-auto border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-800">
+              <Sparkles className="mr-1.5 size-3" aria-hidden="true" />
+              <span className="hidden sm:inline">Simulation report</span><span className="sm:hidden">Simulation</span>
+            </Badge>
+          )}
           <Button asChild variant="ghost" size="sm" className="ml-2 hidden rounded-full sm:inline-flex">
             <Link href="/onboarding"><RotateCcw className="mr-2 size-4" aria-hidden="true" /> New scan</Link>
           </Button>
@@ -140,7 +148,9 @@ export default async function DashboardPage({
               </div>
               <h1 className="mt-5 text-balance text-3xl font-extrabold tracking-[-0.045em] sm:text-5xl">Here&apos;s how AI engines see {data.company_name}.</h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/65 sm:text-lg">
-                Report based on {data.total_queries} simulated local searches across ChatGPT, Claude and Perplexity.
+                {data.mode === "live"
+                  ? `Report based on ${data.total_queries} real local searches asked to AI engines.`
+                  : `Report based on ${data.total_queries} simulated local searches across ChatGPT, Claude and Perplexity.`}
               </p>
               <a className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-lime-300 hover:text-lime-200" href={data.website_url} target="_blank" rel="noreferrer">
                 {data.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
@@ -220,7 +230,7 @@ export default async function DashboardPage({
         </section>
 
         <section className="pt-4">
-          <div><p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Scan data</p><h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">Simulation details</h2><p className="mt-2 text-muted-foreground">The queries used to calculate your score.</p></div>
+          <div><p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Scan data</p><h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">{data.mode === "live" ? "Scan details" : "Simulation details"}</h2><p className="mt-2 text-muted-foreground">The queries used to calculate your score.</p></div>
           <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-foreground/8 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <Table className="min-w-[900px]">

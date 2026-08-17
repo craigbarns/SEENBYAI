@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+openai
 pydantic
 pydantic-settings
 sqlalchemy

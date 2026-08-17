@@ -30,6 +30,7 @@ export interface DashboardData {
   top_competitor_mentions: number;
   queries: QueryResult[];
   recommendations: Recommendation[];
+  mode: "live" | "simulation";
 }
 
 const API_BASE_URL = process.env.SEENBYAI_API_URL ?? "http://127.0.0.1:8000";
