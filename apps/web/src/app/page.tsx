@@ -22,23 +22,23 @@ const steps = [
   {
     icon: Search,
     number: "01",
-    title: "Décrivez votre activité",
+    title: "Describe your business",
     description:
-      "Votre métier, votre ville et vos services suffisent pour générer les questions réellement posées par vos prospects.",
+      "Your trade, your city and your services are all we need to generate the questions your prospects actually ask.",
   },
   {
     icon: MessageSquareText,
     number: "02",
-    title: "Nous simulons les recherches",
+    title: "We simulate the searches",
     description:
-      "SeenByAI mesure vos mentions et celles de vos concurrents dans ChatGPT, Claude et Perplexity.",
+      "SeenByAI measures your mentions and your competitors' across ChatGPT, Claude and Perplexity.",
   },
   {
     icon: ListChecks,
     number: "03",
-    title: "Passez à l’action",
+    title: "Take action",
     description:
-      "Vous recevez des recommandations concrètes, triées par priorité et par impact estimé.",
+      "You get concrete recommendations, ranked by priority and estimated impact.",
   },
 ];
 
@@ -53,29 +53,29 @@ export default function Home() {
     <div className="min-h-screen bg-[#f8f8f3]">
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/88 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
-          <Link className="group flex items-center gap-2.5" href="/" aria-label="SeenByAI, accueil">
+          <Link className="group flex items-center gap-2.5" href="/" aria-label="SeenByAI, home">
             <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:-rotate-3">
               <Bot className="size-5" aria-hidden="true" />
             </span>
             <span className="text-xl font-extrabold tracking-[-0.04em]">SeenByAI</span>
           </Link>
 
-          <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Navigation principale">
+          <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Main navigation">
             <Link className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground" href="#method">
-              Méthode
+              How it works
             </Link>
             <Link className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground" href="#demo">
-              Exemple de rapport
+              Sample report
             </Link>
             <Link className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground" href="#pricing">
-              Tarif
+              Pricing
             </Link>
           </nav>
 
           <Button asChild className="ml-auto rounded-full px-5 md:ml-7">
             <Link href="/onboarding">
-              <span className="hidden sm:inline">Analyser mon entreprise</span>
-              <span className="sm:hidden">Analyser</span>
+              <span className="hidden sm:inline">Analyze my business</span>
+              <span className="sm:hidden">Analyze</span>
               <ArrowRight className="ml-2 size-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -92,34 +92,34 @@ export default function Home() {
             <div className="max-w-2xl animate-fade-in-up">
               <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/70 px-3.5 py-2 text-xs font-bold uppercase tracking-[0.12em] text-primary shadow-sm">
                 <Sparkles className="size-3.5 text-lime-600" aria-hidden="true" />
-                Visibilité IA des entreprises locales
+                AI visibility for local businesses
               </div>
 
               <h1 className="text-balance text-[2.9rem] font-extrabold leading-[0.98] tracking-[-0.055em] text-foreground sm:text-6xl lg:text-[4.6rem]">
-                Quand vos clients interrogent une IA,
-                <span className="mt-2 block text-emerald-700">êtes-vous dans la réponse&nbsp;?</span>
+                When your customers ask an AI,
+                <span className="mt-2 block text-emerald-700">are you in the answer?</span>
               </h1>
 
               <p className="mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
-                SeenByAI teste les requêtes qui comptent pour votre activité, compare vos concurrents et transforme les résultats en actions concrètes.
+                SeenByAI tests the queries that matter for your business, benchmarks your competitors and turns the results into concrete actions.
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-14 rounded-full px-7 text-base shadow-lg shadow-primary/15">
                   <Link href="/onboarding">
-                    Lancer mon analyse gratuite
+                    Start my free analysis
                     <ArrowRight className="ml-2 size-5" aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="h-14 rounded-full border-foreground/15 bg-white/60 px-7 text-base">
-                  <Link href="#demo">Explorer un rapport</Link>
+                  <Link href="#demo">Explore a report</Link>
                 </Button>
               </div>
 
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-muted-foreground">
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Sans carte bancaire</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Résultats immédiats</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Données lisibles</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> No credit card required</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Instant results</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Easy-to-read data</span>
               </div>
             </div>
 
@@ -129,30 +129,30 @@ export default function Home() {
                 <div className="flex items-center justify-between px-3 py-2 text-primary-foreground/65">
                   <div className="flex items-center gap-2 text-sm font-bold text-white">
                     <Bot className="size-4" aria-hidden="true" />
-                    Analyse de visibilité
+                    Visibility analysis
                   </div>
                   <div className="flex items-center gap-2 text-xs font-semibold">
                     <span className="size-2 rounded-full bg-lime-300" />
-                    Terminée
+                    Completed
                   </div>
                 </div>
 
                 <div className="mt-2 rounded-[1.35rem] bg-white p-4 sm:p-6">
                   <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Entreprise analysée</p>
-                      <p className="mt-1 text-lg font-extrabold tracking-tight">Maison Lenoir · Lyon</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Business analyzed</p>
+                      <p className="mt-1 text-lg font-extrabold tracking-tight">Lakeside Kitchen Co. · Austin</p>
                     </div>
                     <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
                       <TrendingUp className="size-3.5" aria-hidden="true" />
-                      +12 pts potentiels
+                      +12 pts potential
                     </span>
                   </div>
 
                   <div className="grid gap-4 py-5 sm:grid-cols-[0.9fr_1.1fr]">
                     <div className="rounded-2xl bg-[#f3f4ed] p-4">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Score IA</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">AI Score</p>
                         <Gauge className="size-4 text-primary" aria-hidden="true" />
                       </div>
                       <div className="mt-4 flex items-end gap-1">
@@ -165,11 +165,11 @@ export default function Home() {
                     </div>
 
                     <div className="rounded-2xl border border-border p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Question testée</p>
-                      <p className="mt-2 text-sm font-bold leading-5">«&nbsp;Quel artisan recommandez-vous pour rénover une cuisine à Lyon&nbsp;?&nbsp;»</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Query tested</p>
+                      <p className="mt-2 text-sm font-bold leading-5">&ldquo;Which contractor would you recommend to remodel a kitchen in Austin?&rdquo;</p>
                       <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-emerald-700">
                         <CheckCircle2 className="size-4" aria-hidden="true" />
-                        Marque citée par 2 IA sur 3
+                        Brand cited by 2 of 3 AIs
                       </div>
                     </div>
                   </div>
@@ -193,27 +193,27 @@ export default function Home() {
                   <ListChecks className="size-5" aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground">Priorité détectée</p>
-                  <p className="text-sm font-extrabold">Créer une FAQ locale</p>
+                  <p className="text-xs font-semibold text-muted-foreground">Priority detected</p>
+                  <p className="text-sm font-extrabold">Create a local FAQ page</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="border-b border-foreground/8 bg-white" aria-label="Bénéfices clés">
+        <section className="border-b border-foreground/8 bg-white" aria-label="Key benefits">
           <div className="mx-auto grid max-w-7xl divide-y divide-foreground/8 px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8 lg:px-10">
             <div className="flex gap-4 py-7 sm:px-6 sm:first:pl-0">
               <BarChart3 className="mt-0.5 size-5 shrink-0 text-emerald-700" aria-hidden="true" />
-              <div><p className="font-extrabold">Un score compréhensible</p><p className="mt-1 text-sm text-muted-foreground">Votre position en un coup d’œil.</p></div>
+              <div><p className="font-extrabold">A score you can understand</p><p className="mt-1 text-sm text-muted-foreground">Your position at a glance.</p></div>
             </div>
             <div className="flex gap-4 py-7 sm:px-6">
               <CircleDot className="mt-0.5 size-5 shrink-0 text-emerald-700" aria-hidden="true" />
-              <div><p className="font-extrabold">Des preuves, pas des intuitions</p><p className="mt-1 text-sm text-muted-foreground">Chaque mention reste traçable.</p></div>
+              <div><p className="font-extrabold">Evidence, not hunches</p><p className="mt-1 text-sm text-muted-foreground">Every mention stays traceable.</p></div>
             </div>
             <div className="flex gap-4 py-7 sm:px-6 sm:last:pr-0">
               <ShieldCheck className="mt-0.5 size-5 shrink-0 text-emerald-700" aria-hidden="true" />
-              <div><p className="font-extrabold">Des actions priorisées</p><p className="mt-1 text-sm text-muted-foreground">Commencez par ce qui compte.</p></div>
+              <div><p className="font-extrabold">Prioritized actions</p><p className="mt-1 text-sm text-muted-foreground">Start with what matters most.</p></div>
             </div>
           </div>
         </section>
@@ -221,8 +221,8 @@ export default function Home() {
         <section id="method" className="scroll-mt-24 bg-white py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <div className="max-w-2xl">
-              <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-700">Simple par conception</p>
-              <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">De votre site à un plan d’action en trois étapes.</h2>
+              <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-700">Simple by design</p>
+              <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">From your website to an action plan in three steps.</h2>
             </div>
 
             <div className="mt-12 grid gap-5 lg:grid-cols-3">
@@ -243,13 +243,13 @@ export default function Home() {
         <section id="demo" className="scroll-mt-20 overflow-hidden bg-[#173b35] py-20 text-white sm:py-28">
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:px-10">
             <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-lime-300">Un rapport qui mène quelque part</p>
-              <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">Voyez ce que les IA voient. Corrigez ce qu’elles ignorent.</h2>
+              <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-lime-300">A report that leads somewhere</p>
+              <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">See what the AIs see. Fix what they miss.</h2>
               <p className="mt-6 max-w-xl text-lg leading-8 text-white/65">
-                Le rapport relie chaque faiblesse détectée à une action éditoriale ou technique, avec une priorité et un impact estimé.
+                The report connects every weakness it detects to an editorial or technical action, with a priority and an estimated impact.
               </p>
               <Button asChild size="lg" className="mt-8 h-13 rounded-full bg-lime-300 px-6 text-[#173b35] hover:bg-lime-200">
-                <Link href="/onboarding">Créer mon premier rapport <ArrowRight className="ml-2 size-5" aria-hidden="true" /></Link>
+                <Link href="/onboarding">Create my first report <ArrowRight className="ml-2 size-5" aria-hidden="true" /></Link>
               </Button>
             </div>
 
@@ -257,16 +257,16 @@ export default function Home() {
               <div className="rounded-[1.25rem] bg-[#f8f8f3] p-5 text-foreground sm:p-7">
                 <div className="flex flex-col gap-4 border-b border-foreground/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted-foreground">Plan d’action recommandé</p>
-                    <h3 className="mt-1 text-2xl font-extrabold tracking-tight">3 opportunités à fort impact</h3>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted-foreground">Recommended action plan</p>
+                    <h3 className="mt-1 text-2xl font-extrabold tracking-tight">3 high-impact opportunities</h3>
                   </div>
-                  <span className="w-fit rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">Priorité haute</span>
+                  <span className="w-fit rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">High priority</span>
                 </div>
                 <div className="mt-5 space-y-3">
                   {[
-                    ["Créer une FAQ locale", "Répondre aux 8 questions les plus fréquentes", "+8 pts"],
-                    ["Structurer vos données", "Ajouter le balisage LocalBusiness", "+3 pts"],
-                    ["Renforcer la page Services", "Préciser les zones et spécialités", "+1 pt"],
+                    ["Create a local FAQ page", "Answer the 8 most frequent customer questions", "+8 pts"],
+                    ["Structure your data", "Add LocalBusiness schema markup", "+3 pts"],
+                    ["Strengthen your Services page", "Detail your service areas and specialties", "+1 pt"],
                   ].map(([title, detail, impact], index) => (
                     <div className="flex items-center gap-3 rounded-2xl border border-foreground/10 bg-white p-4" key={title}>
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{index + 1}</span>
@@ -283,22 +283,22 @@ export default function Home() {
 
         <section id="pricing" className="scroll-mt-20 bg-[#f8f8f3] py-20 sm:py-28">
           <div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
-            <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-700">Commencez sans risque</p>
-            <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">Votre premier scan est offert.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">Testez le parcours complet sur votre entreprise avant de décider de suivre votre visibilité dans le temps.</p>
+            <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-700">Start risk-free</p>
+            <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">Your first scan is on us.</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">Run the full analysis on your business before deciding to track your visibility over time.</p>
 
             <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-[1.75rem] border border-foreground/10 bg-white text-left shadow-xl shadow-primary/5">
               <div className="grid gap-6 p-6 sm:grid-cols-[1fr_auto] sm:items-center sm:p-8">
                 <div>
-                  <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Analyse découverte</p>
-                  <div className="mt-2 flex items-end gap-2"><span className="text-5xl font-black tracking-[-0.06em]">0 €</span><span className="pb-1.5 text-sm font-semibold text-muted-foreground">sans carte bancaire</span></div>
+                  <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Discovery scan</p>
+                  <div className="mt-2 flex items-end gap-2"><span className="text-5xl font-black tracking-[-0.06em]">$0</span><span className="pb-1.5 text-sm font-semibold text-muted-foreground">no credit card required</span></div>
                 </div>
                 <Button asChild size="lg" className="h-13 rounded-full px-6">
-                  <Link href="/onboarding">Tester maintenant <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
+                  <Link href="/onboarding">Try it now <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
                 </Button>
               </div>
               <div className="grid gap-3 border-t border-foreground/8 bg-[#f3f4ed] p-6 text-sm font-semibold sm:grid-cols-3 sm:p-8">
-                {["20 requêtes simulées", "3 moteurs IA comparés", "Plan d’action complet"].map((item) => (
+                {["20 simulated queries", "3 AI engines compared", "Full action plan"].map((item) => (
                   <span className="flex items-center gap-2" key={item}><Check className="size-4 text-emerald-700" aria-hidden="true" /> {item}</span>
                 ))}
               </div>
@@ -309,15 +309,15 @@ export default function Home() {
 
       <footer className="border-t border-foreground/8 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-9 sm:px-8 md:flex-row md:items-center lg:px-10">
-          <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="SeenByAI, accueil">
+          <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="SeenByAI, home">
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Bot className="size-4" aria-hidden="true" /></span>
             SeenByAI
           </Link>
-          <p className="text-sm text-muted-foreground md:ml-3">© 2026 SeenByAI. La visibilité IA, rendue actionnable.</p>
-          <nav className="flex gap-5 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Navigation de pied de page">
-            <Link className="hover:text-foreground" href="#method">Méthode</Link>
-            <Link className="hover:text-foreground" href="#pricing">Tarif</Link>
-            <Link className="hover:text-foreground" href="/onboarding">Lancer un scan</Link>
+          <p className="text-sm text-muted-foreground md:ml-3">© 2026 SeenByAI. AI visibility, made actionable.</p>
+          <nav className="flex gap-5 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Footer navigation">
+            <Link className="hover:text-foreground" href="#method">How it works</Link>
+            <Link className="hover:text-foreground" href="#pricing">Pricing</Link>
+            <Link className="hover:text-foreground" href="/onboarding">Run a scan</Link>
           </nav>
         </div>
       </footer>

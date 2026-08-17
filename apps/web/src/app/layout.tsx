@@ -3,16 +3,16 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "SeenByAI — Mesurez votre visibilité dans les réponses IA",
+    default: "SeenByAI — Measure your visibility in AI answers",
     template: "%s | SeenByAI",
   },
   description:
-    "Découvrez si ChatGPT, Claude et Perplexity recommandent votre entreprise, puis obtenez un plan d’action priorisé.",
+    "Find out whether ChatGPT, Claude and Perplexity recommend your business, then get a prioritized action plan.",
   openGraph: {
-    title: "SeenByAI — Votre entreprise est-elle visible dans les IA ?",
+    title: "SeenByAI — Is your business visible in AI answers?",
     description:
-      "Mesurez votre visibilité dans ChatGPT, Claude et Perplexity en quelques minutes.",
-    locale: "fr_FR",
+      "Measure your visibility in ChatGPT, Claude and Perplexity in minutes.",
+    locale: "en_US",
     type: "website",
   },
 };
@@ -28,10 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans">
         <a className="skip-link" href="#main-content">
-          Aller au contenu principal
+          Skip to main content
         </a>
         {children}
       </body>

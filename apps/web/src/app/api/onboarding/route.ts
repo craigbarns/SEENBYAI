@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { message: "Les informations fournies ne permettent pas de lancer l’analyse.", details: data },
+        { message: "We couldn't start the analysis with the information provided.", details: data },
         { status: response.status },
       );
     }
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json(data, { status: response.status });
   } catch {
     return NextResponse.json(
-      { message: "Le service d’analyse est momentanément indisponible. Réessayez dans quelques instants." },
+      { message: "The analysis service is temporarily unavailable. Please try again in a moment." },
       { status: 502 },
     );
   }

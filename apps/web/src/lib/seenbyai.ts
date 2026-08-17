@@ -14,7 +14,7 @@ export interface Recommendation {
   title: string;
   description: string;
   priority: Priority;
-  estimated_impact: "fort" | "moyen" | "faible";
+  estimated_impact: "high" | "medium" | "low";
 }
 
 export interface DashboardData {

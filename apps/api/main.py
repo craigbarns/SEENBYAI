@@ -83,20 +83,20 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
     service = (request.services or industry).split(",")[0].strip()
     engines = ["ChatGPT", "Perplexity", "Claude"]
     base_queries = [
-        f"Quel est le meilleur professionnel en {industry.lower()} à {city} ?",
-        f"Qui recommandez-vous pour {service.lower()} à {city} ?",
-        f"Quelles entreprises de {industry.lower()} sont fiables à {city} ?",
-        f"Je cherche un spécialiste de {service.lower()} près de {city}",
-        f"Quels sont les professionnels de {industry.lower()} les mieux notés à {city} ?",
-        f"Quelle entreprise contacter rapidement pour {service.lower()} à {city} ?",
-        f"Comparez les meilleurs prestataires de {industry.lower()} à {city}",
-        f"À qui faire appel pour un projet de {industry.lower()} dans la région de {city} ?",
-        f"Quel expert local de {industry.lower()} choisir à {city} ?",
-        f"Avis et recommandations pour {service.lower()} à {city}",
+        f"Who is the best {industry.lower()} professional in {city}?",
+        f"Who would you recommend for {service.lower()} in {city}?",
+        f"Which {industry.lower()} companies are reliable in {city}?",
+        f"I'm looking for a {service.lower()} specialist near {city}",
+        f"What are the top-rated {industry.lower()} professionals in {city}?",
+        f"Which company should I contact quickly for {service.lower()} in {city}?",
+        f"Compare the best {industry.lower()} providers in {city}",
+        f"Who should I hire for a {industry.lower()} project in the {city} area?",
+        f"Which local {industry.lower()} expert should I choose in {city}?",
+        f"Reviews and recommendations for {service.lower()} in {city}",
     ]
     competitors = [
-        f"{industry.title()} Expert {city}",
-        f"Les Pros de {city}",
+        f"{city} {industry.title()} Experts",
+        f"{city} Pro Services",
         f"{industry.title()} Direct",
     ]
 
@@ -128,31 +128,31 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
     visibility_score = round((brand_mentions / len(results)) * 100)
     recommendations = [
         Recommendation(
-            title="Créer une FAQ locale",
+            title="Create a local FAQ page",
             description=(
-                f"Répondez directement aux questions fréquentes sur {service.lower()} "
-                f"et vos zones d’intervention autour de {city}."
+                f"Answer the questions customers actually ask about {service.lower()} "
+                f"and the areas you serve around {city}."
             ),
             priority="high",
-            estimated_impact="fort",
+            estimated_impact="high",
         ),
         Recommendation(
-            title="Ajouter le balisage LocalBusiness",
+            title="Add LocalBusiness structured data",
             description=(
-                "Structurez le nom, l’adresse, le téléphone et les services de l’entreprise "
-                "pour rendre ces informations vérifiables par les moteurs."
+                "Mark up your business name, address, phone number and services "
+                "so AI engines can verify this information."
             ),
             priority="medium",
-            estimated_impact="moyen",
+            estimated_impact="medium",
         ),
         Recommendation(
-            title="Enrichir la page Services",
+            title="Strengthen your Services page",
             description=(
-                f"Décrivez vos spécialités de {industry.lower()}, vos preuves d’expertise "
-                f"et vos réalisations locales à {city}."
+                f"Describe your {industry.lower()} specialties, proof of expertise "
+                f"and local projects completed in {city}."
             ),
             priority="low",
-            estimated_impact="faible",
+            estimated_impact="low",
         ),
     ]
 
