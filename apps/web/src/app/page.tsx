@@ -19,9 +19,58 @@ import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/logo";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
+const faqs = [
+  {
+    question: "What is an AI visibility score?",
+    answer:
+      "Your AI visibility score (0–100) measures how often AI engines like ChatGPT mention your business when consumers ask for recommendations in your industry and city. We ask the real questions your customers ask, then calculate the percentage of answers that name your business.",
+  },
+  {
+    question: "Is the free scan really free?",
+    answer:
+      "Yes. The discovery scan runs real queries against AI engines and shows your visibility score and your #1 competitor at no cost, with no credit card required. The Pro plan ($29/month) unlocks every competitor name, all queries, your full action plan, weekly re-scans and score history.",
+  },
+  {
+    question: "How do you know whether an AI mentions my business?",
+    answer:
+      "We ask AI engines the questions your local customers actually ask — in their language — then analyze each answer to detect mentions of your brand, including partial and informal variants of your name, and identify every competitor the AI recommends instead.",
+  },
+  {
+    question: "Why doesn't ChatGPT recommend my business?",
+    answer:
+      "AI engines recommend businesses with strong, consistent, verifiable signals: complete business profiles, steady reviews, answer-shaped website content and structured data. If those signals are weak or inconsistent, the AI names your competitors instead. Your LLM Rank report pinpoints which signals to fix first.",
+  },
+  {
+    question: "How can I improve my AI visibility?",
+    answer:
+      "Start with the prioritized action plan in your report: publish a local FAQ answering real customer questions, add LocalBusiness structured data to your website, and keep your name, address and phone consistent across every directory. Then track your score weekly to see what moves it.",
+  },
+  {
+    question: "How often is my visibility re-checked?",
+    answer:
+      "Pro subscribers get automatic re-scans every week. AI answers shift as models and their search indexes update, so weekly tracking shows whether your improvements are working and alerts you when competitors overtake you.",
+  },
+];
+
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon.svg`,
+    },
+    {
+      "@type": "FAQPage",
+      "@id": `${SITE_URL}/#faq`,
+      mainEntity: faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    },
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
@@ -103,6 +152,9 @@ export default function Home() {
             </Link>
             <Link className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground" href="#pricing">
               Pricing
+            </Link>
+            <Link className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground" href="/guides">
+              Guides
             </Link>
           </nav>
 
@@ -359,6 +411,28 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <section id="faq" className="scroll-mt-20 border-t border-foreground/8 bg-white py-20 sm:py-28" aria-label="Frequently asked questions">
+          <div className="mx-auto max-w-3xl px-5 sm:px-8">
+            <div className="text-center">
+              <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-700">FAQ</p>
+              <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">Questions, answered.</h2>
+            </div>
+            <div className="mt-12 space-y-4">
+              {faqs.map((faq) => (
+                <details className="group rounded-2xl border border-foreground/8 bg-[#f8f8f3] p-6 open:bg-white open:shadow-sm" key={faq.question}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-extrabold tracking-[-0.02em] [&::-webkit-details-marker]:hidden">
+                    {faq.question}
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden="true" />
+                  </summary>
+                  <p className="mt-4 leading-7 text-muted-foreground">{faq.answer}</p>
+                </details>
+              ))}
+            </div>
+            <div className="mt-10 text-center">
+              <p className="text-muted-foreground">Want to go deeper? Read our <Link className="font-bold text-emerald-700 hover:underline" href="/guides">guides on AI visibility and GEO</Link>.</p>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t border-foreground/8 bg-white">
@@ -368,9 +442,11 @@ export default function Home() {
             LLM Rank
           </Link>
           <p className="text-sm text-muted-foreground md:ml-3">© 2026 LLM Rank. AI visibility, made actionable.</p>
-          <nav className="flex gap-5 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Footer navigation">
+          <nav className="flex flex-wrap gap-5 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Footer navigation">
             <Link className="hover:text-foreground" href="#method">How it works</Link>
             <Link className="hover:text-foreground" href="#pricing">Pricing</Link>
+            <Link className="hover:text-foreground" href="/guides">Guides</Link>
+            <Link className="hover:text-foreground" href="/guides/get-recommended-by-chatgpt">Get recommended by ChatGPT</Link>
             <Link className="hover:text-foreground" href="/onboarding">Run a scan</Link>
           </nav>
         </div>

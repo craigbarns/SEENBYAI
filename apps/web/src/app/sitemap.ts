@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { guides } from "@/lib/guides";
 import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -14,5 +15,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    {
+      url: `${SITE_URL}/guides`,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    ...guides.map((guide) => ({
+      url: `${SITE_URL}/guides/${guide.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
   ];
 }

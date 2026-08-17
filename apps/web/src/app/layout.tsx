@@ -46,11 +46,14 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "LLM Rank — Is your business visible in AI answers?",
     description:
       "Measure your visibility in ChatGPT, Claude and Perplexity in minutes. Free AI visibility score, no credit card required.",
   },
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 export const viewport: Viewport = {
