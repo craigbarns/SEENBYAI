@@ -135,11 +135,11 @@ def build_queries(request: OnboardingRequest) -> List[str]:
         f"Who is the best {industry.lower()} professional in {city}?",
         f"Who would you recommend for {service.lower()} in {city}?",
         f"Which {industry.lower()} companies are reliable in {city}?",
-        f"I'm looking for a {service.lower()} specialist near {city}",
+        f"I'm looking for {service.lower()} specialists near {city}",
         f"What are the top-rated {industry.lower()} professionals in {city}?",
         f"Which company should I contact quickly for {service.lower()} in {city}?",
         f"Compare the best {industry.lower()} providers in {city}",
-        f"Who should I hire for a {industry.lower()} project in the {city} area?",
+        f"Who should I hire for {industry.lower()} work in the {city} area?",
         f"Which local {industry.lower()} expert should I choose in {city}?",
         f"Reviews and recommendations for {service.lower()} in {city}",
     ]
@@ -186,8 +186,20 @@ def build_recommendations(request: OnboardingRequest) -> List[Recommendation]:
 
 ANSWER_SYSTEM_PROMPT = (
     "You are a helpful assistant answering a consumer looking for a local business. "
-    "Answer naturally and concisely. Name specific local businesses when you know of any; "
+    "Answer naturally and concisely, in the same language as the question. "
+    "Name specific local businesses when you know of any; "
     "if you don't know specific businesses, say so and give general advice."
+)
+
+QUERY_GENERATION_SYSTEM_PROMPT = (
+    "You generate realistic consumer search queries for AI assistants. "
+    "Write short, natural questions that local consumers would actually ask an AI assistant "
+    "(like ChatGPT) when looking for this type of business in this city. "
+    "Never mention the business name itself. Vary the intent: best, recommendation, "
+    "comparison, urgency, reviews, nearby. "
+    "CRITICAL: write the questions in the language consumers in that city most likely use "
+    "(e.g. French for Marseille, English for Austin, Spanish for Madrid). "
+    'Respond with JSON only: {"queries": ["...", "..."]}'
 )
 
 EXTRACTION_SYSTEM_PROMPT = (
@@ -218,6 +230,31 @@ def brand_variants(name: str) -> List[str]:
 def brand_in_text(variants: List[str], answer: str) -> bool:
     normalized = normalize_name(answer)
     return any(variant in normalized for variant in variants)
+
+
+async def generate_queries_llm(client, request: OnboardingRequest) -> Optional[List[str]]:
+    details = (
+        f"Industry: {request.industry.strip()}\n"
+        f"City: {request.city.strip().title()}\n"
+        f"Main services: {(request.services or request.industry).strip()}"
+    )
+    try:
+        response = await client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": QUERY_GENERATION_SYSTEM_PROMPT},
+                {"role": "user", "content": f"{details}\n\nGenerate exactly 10 queries."},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=800,
+            temperature=0.4,
+            timeout=45,
+        )
+        payload = json.loads(response.choices[0].message.content or "{}")
+        queries = [q.strip() for q in payload.get("queries", []) if isinstance(q, str) and q.strip()]
+        return queries[:10] if len(queries) >= 5 else None
+    except Exception:
+        return None
 
 
 async def ask_engine(client, query: str) -> Optional[str]:
@@ -262,7 +299,7 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-    queries = build_queries(request)
+    queries = await generate_queries_llm(client, request) or build_queries(request)
     semaphore = asyncio.Semaphore(5)
 
     async def guarded_ask(query: str) -> Optional[str]:

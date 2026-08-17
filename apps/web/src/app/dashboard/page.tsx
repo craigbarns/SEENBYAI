@@ -202,7 +202,11 @@ export default async function DashboardPage({
               <MessageSquareText className="size-5 text-muted-foreground" aria-hidden="true" />
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-emerald-50 p-4"><div className="flex items-center gap-2 font-extrabold text-emerald-800"><CheckCircle2 className="size-4" aria-hidden="true" /> Positive signal</div><p className="mt-2 text-sm leading-6 text-emerald-900/70">Your brand is already recognized on {data.brand_mentions} relevant queries.</p></div>
+              {data.brand_mentions > 0 ? (
+                <div className="rounded-2xl bg-emerald-50 p-4"><div className="flex items-center gap-2 font-extrabold text-emerald-800"><CheckCircle2 className="size-4" aria-hidden="true" /> Positive signal</div><p className="mt-2 text-sm leading-6 text-emerald-900/70">Your brand is already recognized on {data.brand_mentions} relevant queries.</p></div>
+              ) : (
+                <div className="rounded-2xl bg-slate-100 p-4"><div className="flex items-center gap-2 font-extrabold text-slate-700"><CircleAlert className="size-4" aria-hidden="true" /> No mentions yet</div><p className="mt-2 text-sm leading-6 text-slate-600">AI engines never cited your brand in this scan. The action plan below is designed to change that.</p></div>
+              )}
               <div className="rounded-2xl bg-amber-50 p-4"><div className="flex items-center gap-2 font-extrabold text-amber-800"><AlertTriangle className="size-4" aria-hidden="true" /> Opportunity</div><p className="mt-2 text-sm leading-6 text-amber-900/70">{Math.max(0, data.total_queries - data.brand_mentions)} queries don&apos;t mention your business yet.</p></div>
             </div>
           </div>
