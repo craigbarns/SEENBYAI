@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 interface FormData {
   companyName: string;
   websiteUrl: string;
+  email: string;
   city: string;
   industry: string;
   services: string;
@@ -36,6 +37,7 @@ interface OnboardingResponse {
 const initialFormData: FormData = {
   companyName: "",
   websiteUrl: "",
+  email: "",
   city: "",
   industry: "",
   services: "",
@@ -183,6 +185,23 @@ export default function OnboardingPage() {
                   required
                   className="h-12 rounded-xl border-foreground/10 bg-white px-4 shadow-sm focus-visible:border-primary"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-bold">Work email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  placeholder="you@company.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  aria-describedby="email-help"
+                  className="h-12 rounded-xl border-foreground/10 bg-white px-4 shadow-sm focus-visible:border-primary"
+                />
+                <p id="email-help" className="text-xs text-muted-foreground">Your report link stays tied to this email.</p>
               </div>
 
               <div className="space-y-2">

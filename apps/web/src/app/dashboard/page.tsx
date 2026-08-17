@@ -11,6 +11,7 @@ import {
   ExternalLink,
   FileText,
   Gauge,
+  LockKeyhole,
   MapPin,
   MessageSquareText,
   RotateCcw,
@@ -22,11 +23,19 @@ import {
 } from "lucide-react";
 
 import { LogoMark } from "@/components/logo";
+import { UnlockButton } from "@/components/unlock-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getDashboardData, type Priority } from "@/lib/seenbyai";
+import { confirmCheckout, getDashboardData, type Priority } from "@/lib/seenbyai";
+
+const PLAN_PRICE = "$29/mo";
+
+function maskName(name: string) {
+  const trimmed = name.trim();
+  return trimmed.charAt(0) + "•".repeat(Math.min(10, Math.max(4, trimmed.length - 1)));
+}
 
 export const metadata: Metadata = {
   title: "AI Visibility Report",
@@ -64,12 +73,19 @@ function getScoreSummary(score: number) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ site_id?: string | string[] }>;
+  searchParams: Promise<{ site_id?: string | string[]; session_id?: string | string[] }>;
 }) {
-  const siteIdParam = (await searchParams).site_id;
+  const params = await searchParams;
+  const siteIdParam = params.site_id;
   const siteId = Array.isArray(siteIdParam) ? siteIdParam[0] : siteIdParam;
+  const sessionIdParam = params.session_id;
+  const sessionId = Array.isArray(sessionIdParam) ? sessionIdParam[0] : sessionIdParam;
 
   if (!siteId) redirect("/onboarding");
+
+  if (sessionId) {
+    await confirmCheckout(siteId, sessionId);
+  }
 
   const data = await getDashboardData(siteId);
 
@@ -173,6 +189,21 @@ export default async function DashboardPage({
           </div>
         </section>
 
+        {!data.unlocked && (
+          <section className="flex flex-col items-start justify-between gap-4 rounded-[1.75rem] border-2 border-dashed border-primary/25 bg-white p-6 sm:flex-row sm:items-center sm:p-7">
+            <div className="flex items-start gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-lime-200 text-primary">
+                <LockKeyhole className="size-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-xl font-extrabold tracking-[-0.03em]">This is a preview of your report</h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">Unlock every competitor name, all {data.total_queries} queries and your full action plan. Cancel anytime.</p>
+              </div>
+            </div>
+            <UnlockButton siteId={data.site_id} className="h-12 shrink-0 rounded-full px-6 font-extrabold">Unlock full report — {PLAN_PRICE}</UnlockButton>
+          </section>
+        )}
+
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Key metrics">
           <Card className="border-foreground/8 bg-white py-0 shadow-sm"><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between"><span className="text-sm font-bold text-muted-foreground">Mentions</span><Target className="size-5 text-emerald-700" aria-hidden="true" /></div><p className="mt-4 text-4xl font-black tracking-[-0.05em]">{data.brand_mentions}<span className="text-base font-bold text-muted-foreground">/{data.total_queries}</span></p><p className="mt-2 text-sm text-muted-foreground">Your brand is cited in {mentionRate}% of tests.</p></CardContent></Card>
           <Card className="border-foreground/8 bg-white py-0 shadow-sm"><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between"><span className="text-sm font-bold text-muted-foreground">Leading competitor</span><Trophy className="size-5 text-amber-500" aria-hidden="true" /></div><p className="mt-4 truncate text-2xl font-black tracking-[-0.04em]">{data.top_competitor}</p><p className="mt-2 text-sm text-muted-foreground">{data.top_competitor_mentions} mentions detected.</p></CardContent></Card>
@@ -219,17 +250,31 @@ export default async function DashboardPage({
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {data.recommendations.map((recommendation, index) => (
-              <article className="flex flex-col rounded-[1.5rem] border border-foreground/8 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1" key={recommendation.title}>
-                <div className="flex items-start justify-between gap-4">
-                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{index + 1}</span>
-                  <Badge variant="outline" className={priorityStyles[recommendation.priority]}>{priorityLabels[recommendation.priority]} priority</Badge>
-                </div>
-                <h3 className="mt-6 text-xl font-extrabold tracking-[-0.025em]">{recommendation.title}</h3>
-                <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">{recommendation.description}</p>
-                <div className="mt-6 flex items-center justify-between border-t border-foreground/8 pt-4 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground"><span>Estimated impact</span><span className="text-emerald-700">{recommendation.estimated_impact}</span></div>
-              </article>
-            ))}
+            {data.recommendations.map((recommendation, index) =>
+              data.unlocked ? (
+                <article className="flex flex-col rounded-[1.5rem] border border-foreground/8 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1" key={recommendation.title}>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{index + 1}</span>
+                    <Badge variant="outline" className={priorityStyles[recommendation.priority]}>{priorityLabels[recommendation.priority]} priority</Badge>
+                  </div>
+                  <h3 className="mt-6 text-xl font-extrabold tracking-[-0.025em]">{recommendation.title}</h3>
+                  <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">{recommendation.description}</p>
+                  <div className="mt-6 flex items-center justify-between border-t border-foreground/8 pt-4 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground"><span>Estimated impact</span><span className="text-emerald-700">{recommendation.estimated_impact}</span></div>
+                </article>
+              ) : (
+                <article className="flex flex-col rounded-[1.5rem] border border-dashed border-foreground/15 bg-white/60 p-6" key={`locked-${index}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-foreground/8 text-sm font-black text-muted-foreground">{index + 1}</span>
+                    <Badge variant="outline" className="border-foreground/15 bg-white text-muted-foreground"><LockKeyhole className="mr-1 size-3" aria-hidden="true" /> Locked</Badge>
+                  </div>
+                  <h3 className="mt-6 text-xl font-extrabold tracking-[-0.025em] text-muted-foreground">Recommendation #{index + 1}</h3>
+                  <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">Unlock the full report to reveal this action, its priority and its expected impact on your AI visibility.</p>
+                  <div className="mt-6 border-t border-foreground/8 pt-4">
+                    <UnlockButton siteId={data.site_id} size="sm" variant="outline" className="w-full rounded-full">Unlock — {PLAN_PRICE}</UnlockButton>
+                  </div>
+                </article>
+              ),
+            )}
           </div>
         </section>
 
@@ -240,15 +285,25 @@ export default async function DashboardPage({
               <Table className="min-w-[900px]">
                 <TableHeader className="bg-[#f3f4ed]"><TableRow className="hover:bg-transparent"><TableHead className="w-[390px] px-6 py-4 font-extrabold text-foreground">Query tested</TableHead><TableHead className="font-extrabold text-foreground">Engine</TableHead><TableHead className="text-center font-extrabold text-foreground">Mention</TableHead><TableHead className="font-extrabold text-foreground">Competitors cited</TableHead><TableHead className="pr-6 text-right font-extrabold text-foreground">Confidence</TableHead></TableRow></TableHeader>
                 <TableBody>
-                  {data.queries.map((query, index) => (
+                  {(data.unlocked ? data.queries : data.queries.slice(0, 3)).map((query, index) => (
                     <TableRow className="hover:bg-[#f8f8f3]" key={`${query.engine}-${query.query}-${index}`}>
                       <TableCell className="px-6 py-4 font-semibold leading-6">{query.query}</TableCell>
                       <TableCell><Badge variant="outline" className="bg-white"><span className={`mr-2 size-2 rounded-full ${engineColors[query.engine] ?? "bg-slate-400"}`} />{query.engine}</Badge></TableCell>
                       <TableCell className="text-center">{query.brand_mentioned ? <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600" aria-label="Brand mentioned"><CheckCircle2 className="size-5" aria-hidden="true" /></span> : <span className="inline-flex size-8 items-center justify-center rounded-full bg-red-50 text-red-500" aria-label="Brand not mentioned"><XCircle className="size-5" aria-hidden="true" /></span>}</TableCell>
-                      <TableCell>{query.competitors_detected.length ? <div className="flex flex-wrap gap-1.5">{query.competitors_detected.map((competitor) => <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800" key={competitor}>{competitor}</span>)}</div> : <span className="text-sm italic text-muted-foreground">None</span>}</TableCell>
+                      <TableCell>{query.competitors_detected.length ? <div className="flex flex-wrap gap-1.5">{query.competitors_detected.map((competitor) => data.unlocked || competitor === data.top_competitor ? <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800" key={competitor}>{competitor}</span> : <span className="inline-flex items-center gap-1 rounded-md border border-foreground/10 bg-foreground/5 px-2 py-1 text-xs font-bold text-muted-foreground" key={competitor}><LockKeyhole className="size-3" aria-hidden="true" />{maskName(competitor)}</span>)}</div> : <span className="text-sm italic text-muted-foreground">None</span>}</TableCell>
                       <TableCell className="pr-6 text-right font-extrabold tabular-nums">{Math.round(query.confidence * 100)}%</TableCell>
                     </TableRow>
                   ))}
+                  {!data.unlocked && data.queries.length > 3 && (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={5} className="p-0">
+                        <div className="flex flex-col items-center justify-center gap-3 bg-[#f8f8f3] px-6 py-8 sm:flex-row sm:gap-5">
+                          <span className="flex items-center gap-2 font-bold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden="true" /> {data.queries.length - 3} more queries are hidden in the preview</span>
+                          <UnlockButton siteId={data.site_id} size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>

@@ -31,9 +31,21 @@ export interface DashboardData {
   queries: QueryResult[];
   recommendations: Recommendation[];
   mode: "live" | "simulation";
+  unlocked: boolean;
 }
 
 const API_BASE_URL = process.env.SEENBYAI_API_URL ?? "http://127.0.0.1:8000";
+
+export async function confirmCheckout(siteId: string, sessionId: string): Promise<void> {
+  try {
+    await fetch(
+      `${API_BASE_URL}/api/checkout/confirm?session_id=${encodeURIComponent(sessionId)}&site_id=${encodeURIComponent(siteId)}`,
+      { cache: "no-store" },
+    );
+  } catch {
+    // Payment confirmation is retried on the next page load.
+  }
+}
 
 export async function getDashboardData(siteId: string): Promise<DashboardData | null> {
   try {

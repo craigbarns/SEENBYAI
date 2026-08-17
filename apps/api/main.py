@@ -8,6 +8,7 @@ import uuid
 from collections import Counter
 from typing import List, Optional
 
+import stripe
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AnyHttpUrl, BaseModel, Field
@@ -16,7 +17,14 @@ from sqlalchemy import create_engine, text
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "").strip()
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://llm-rank.app").rstrip("/")
 LIVE_MODE = bool(OPENAI_API_KEY)
+BILLING_ENABLED = bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID)
+
+if STRIPE_SECRET_KEY:
+    stripe.api_key = STRIPE_SECRET_KEY
 
 app = FastAPI(
     title="LLM Rank API",
@@ -57,11 +65,16 @@ def init_db() -> None:
                 "created_at TIMESTAMPTZ DEFAULT now())"
             )
         )
+        conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS email TEXT"))
+        conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS unlocked BOOLEAN NOT NULL DEFAULT FALSE"))
+        conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS stripe_customer TEXT"))
+        conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS stripe_subscription TEXT"))
 
 
 class OnboardingRequest(BaseModel):
     companyName: str = Field(min_length=2, max_length=120)
     websiteUrl: AnyHttpUrl
+    email: str = Field(min_length=5, max_length=200, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     city: str = Field(min_length=2, max_length=100)
     industry: str = Field(min_length=2, max_length=120)
     services: Optional[str] = Field(default=None, max_length=500)
@@ -96,23 +109,34 @@ class DashboardData(BaseModel):
     queries: List[QueryResult]
     recommendations: List[Recommendation]
     mode: str = "simulation"
+    unlocked: bool = True
 
 
 # In-memory fallback when no database is configured (local development).
 MEMORY_DB: dict[str, DashboardData] = {}
+MEMORY_EMAILS: dict[str, str] = {}
 
 
-def save_report(dashboard: DashboardData) -> None:
+def save_report(dashboard: DashboardData, email: Optional[str] = None) -> None:
     if db_engine is None:
         MEMORY_DB[dashboard.site_id] = dashboard
+        if email:
+            MEMORY_EMAILS[dashboard.site_id] = email
         return
     with db_engine.begin() as conn:
         conn.execute(
             text(
-                "INSERT INTO reports (site_id, payload) VALUES (:site_id, CAST(:payload AS jsonb)) "
-                "ON CONFLICT (site_id) DO UPDATE SET payload = EXCLUDED.payload"
+                "INSERT INTO reports (site_id, payload, email, unlocked) "
+                "VALUES (:site_id, CAST(:payload AS jsonb), :email, :unlocked) "
+                "ON CONFLICT (site_id) DO UPDATE SET payload = EXCLUDED.payload, "
+                "email = COALESCE(EXCLUDED.email, reports.email)"
             ),
-            {"site_id": dashboard.site_id, "payload": dashboard.model_dump_json()},
+            {
+                "site_id": dashboard.site_id,
+                "payload": dashboard.model_dump_json(),
+                "email": email,
+                "unlocked": dashboard.unlocked,
+            },
         )
 
 
@@ -121,10 +145,40 @@ def load_report(site_id: str) -> Optional[DashboardData]:
         return MEMORY_DB.get(site_id)
     with db_engine.begin() as conn:
         row = conn.execute(
-            text("SELECT payload FROM reports WHERE site_id = :site_id"),
+            text("SELECT payload, unlocked FROM reports WHERE site_id = :site_id"),
             {"site_id": site_id},
         ).fetchone()
-    return DashboardData.model_validate(row[0]) if row else None
+    if row is None:
+        return None
+    dashboard = DashboardData.model_validate(row[0])
+    dashboard.unlocked = bool(row[1])
+    return dashboard
+
+
+def get_report_email(site_id: str) -> Optional[str]:
+    if db_engine is None:
+        return MEMORY_EMAILS.get(site_id)
+    with db_engine.begin() as conn:
+        row = conn.execute(
+            text("SELECT email FROM reports WHERE site_id = :site_id"),
+            {"site_id": site_id},
+        ).fetchone()
+    return row[0] if row else None
+
+
+def unlock_report(site_id: str, customer: Optional[str], subscription: Optional[str]) -> None:
+    if db_engine is None:
+        if site_id in MEMORY_DB:
+            MEMORY_DB[site_id].unlocked = True
+        return
+    with db_engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE reports SET unlocked = TRUE, stripe_customer = :customer, "
+                "stripe_subscription = :subscription WHERE site_id = :site_id"
+            ),
+            {"site_id": site_id, "customer": customer, "subscription": subscription},
+        )
 
 
 def build_queries(request: OnboardingRequest) -> List[str]:
@@ -438,7 +492,12 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
 
 @app.get("/api/health")
 def healthcheck():
-    return {"status": "ok", "mode": "live" if LIVE_MODE else "simulation", "persistent": db_engine is not None}
+    return {
+        "status": "ok",
+        "mode": "live" if LIVE_MODE else "simulation",
+        "persistent": db_engine is not None,
+        "billing": BILLING_ENABLED,
+    }
 
 
 @app.post("/api/onboarding")
@@ -454,8 +513,50 @@ async def onboard_site(request: OnboardingRequest):
             dashboard = None
     if dashboard is None:
         dashboard = generate_mock_dashboard_data(site_id, request)
-    save_report(dashboard)
+    dashboard.unlocked = not BILLING_ENABLED
+    save_report(dashboard, email=request.email)
     return {"site_id": site_id, "status": "completed", "mode": dashboard.mode}
+
+
+class CheckoutRequest(BaseModel):
+    site_id: str
+
+
+@app.post("/api/checkout")
+def create_checkout(body: CheckoutRequest):
+    if not BILLING_ENABLED:
+        raise HTTPException(status_code=503, detail="Billing is not configured")
+    try:
+        uuid.UUID(body.site_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if load_report(body.site_id) is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    session = stripe.checkout.Session.create(
+        mode="subscription",
+        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+        success_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}",
+        customer_email=get_report_email(body.site_id),
+        metadata={"site_id": body.site_id},
+        allow_promotion_codes=True,
+    )
+    return {"url": session.url}
+
+
+@app.get("/api/checkout/confirm")
+def confirm_checkout(session_id: str, site_id: str):
+    if not BILLING_ENABLED:
+        raise HTTPException(status_code=503, detail="Billing is not configured")
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Checkout session not found")
+    if session.get("payment_status") == "paid" and (session.get("metadata") or {}).get("site_id") == site_id:
+        unlock_report(site_id, session.get("customer"), session.get("subscription"))
+        return {"unlocked": True}
+    return {"unlocked": False}
 
 
 @app.get("/api/dashboard/{site_id}", response_model=DashboardData)
