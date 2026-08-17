@@ -31,6 +31,10 @@ import { getDashboardData, type Priority } from "@/lib/seenbyai";
 export const metadata: Metadata = {
   title: "AI Visibility Report",
   description: "Your visibility score, mentions and SeenByAI action plan.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 const engineColors: Record<string, string> = {

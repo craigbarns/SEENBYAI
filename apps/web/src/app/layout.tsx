@@ -1,19 +1,55 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "SeenByAI — Measure your visibility in AI answers",
+    default: "SeenByAI — Is Your Business Recommended by ChatGPT, Claude & Perplexity?",
     template: "%s | SeenByAI",
   },
   description:
-    "Find out whether ChatGPT, Claude and Perplexity recommend your business, then get a prioritized action plan.",
+    "Check if AI engines like ChatGPT, Claude and Perplexity recommend your local business. Get your free AI visibility score, competitor benchmark and prioritized action plan in minutes.",
+  keywords: [
+    "AI visibility",
+    "AI SEO",
+    "generative engine optimization",
+    "GEO",
+    "ChatGPT recommendations",
+    "AI search optimization",
+    "local business visibility",
+    "AI visibility score",
+    "LLM SEO",
+  ],
+  applicationName: SITE_NAME,
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+    },
+  },
   openGraph: {
     title: "SeenByAI — Is your business visible in AI answers?",
     description:
-      "Measure your visibility in ChatGPT, Claude and Perplexity in minutes.",
+      "Measure your visibility in ChatGPT, Claude and Perplexity in minutes. Free AI visibility score, no credit card required.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
     locale: "en_US",
     type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "SeenByAI — Is your business visible in AI answers?",
+    description:
+      "Measure your visibility in ChatGPT, Claude and Perplexity in minutes. Free AI visibility score, no credit card required.",
   },
 };
 

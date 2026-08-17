@@ -17,6 +17,38 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      description:
+        "Check if AI engines like ChatGPT, Claude and Perplexity recommend your local business.",
+      inLanguage: "en-US",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${SITE_URL}/#software`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      description:
+        "SeenByAI measures how visible a local business is in AI answers from ChatGPT, Claude and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        description: "Free discovery scan — 20 simulated queries across 3 AI engines, no credit card required.",
+      },
+    },
+  ],
+};
 
 const steps = [
   {
@@ -51,6 +83,10 @@ const engines = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#f8f8f3]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/88 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
           <Link className="group flex items-center gap-2.5" href="/" aria-label="SeenByAI, home">
