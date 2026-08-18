@@ -16,6 +16,8 @@ from sqlalchemy import create_engine, text
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "").strip()
@@ -385,6 +387,22 @@ async def ask_engine(client, query: str) -> Optional[str]:
         return None
 
 
+async def ask_claude(client, query: str) -> Optional[str]:
+    try:
+        response = await client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=400,
+            system=ANSWER_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": query}],
+            timeout=45,
+        )
+        if response.stop_reason == "refusal":
+            return None
+        return "".join(block.text for block in response.content if block.type == "text") or None
+    except Exception:
+        return None
+
+
 async def extract_mentions(client, brand: str, answers: List[str]) -> Optional[list]:
     numbered = "\n\n".join(f"Answer {index + 1}:\n{answer}" for index, answer in enumerate(answers))
     try:
@@ -411,18 +429,37 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
 
     client = AsyncOpenAI(api_key=OPENAI_API_KEY)
     queries = await generate_queries_llm(client, request) or build_queries(request)
-    semaphore = asyncio.Semaphore(5)
+    semaphore = asyncio.Semaphore(6)
 
-    async def guarded_ask(query: str) -> Optional[str]:
+    engines: list[tuple[str, str, object]] = [("ChatGPT", "openai", client)]
+    if ANTHROPIC_API_KEY:
+        from anthropic import AsyncAnthropic
+
+        engines.append(("Claude", "anthropic", AsyncAnthropic(api_key=ANTHROPIC_API_KEY)))
+
+    async def guarded_ask(kind: str, engine_client, query: str) -> Optional[str]:
         async with semaphore:
-            return await ask_engine(client, query)
+            if kind == "anthropic":
+                return await ask_claude(engine_client, query)
+            return await ask_engine(engine_client, query)
 
-    answers = await asyncio.gather(*(guarded_ask(query) for query in queries))
-    answered = [(query, answer) for query, answer in zip(queries, answers) if answer]
+    labels: list[tuple[str, str]] = []
+    tasks = []
+    for engine_name, kind, engine_client in engines:
+        for query in queries:
+            labels.append((engine_name, query))
+            tasks.append(guarded_ask(kind, engine_client, query))
+
+    answers = await asyncio.gather(*tasks)
+    answered = [
+        (engine_name, query, answer)
+        for (engine_name, query), answer in zip(labels, answers)
+        if answer
+    ]
     if not answered:
         raise HTTPException(status_code=502, detail="AI engines are unreachable right now, please retry")
 
-    extraction = await extract_mentions(client, request.companyName, [answer for _, answer in answered])
+    extraction = await extract_mentions(client, request.companyName, [answer for _, _, answer in answered])
     extraction_by_index = {}
     if extraction:
         for item in extraction:
@@ -434,7 +471,7 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
     brand_mentions = 0
     competitor_mentions: Counter[str] = Counter()
 
-    for index, (query, answer) in enumerate(answered):
+    for index, (engine_name, query, answer) in enumerate(answered):
         local_mentioned = brand_in_text(variants, answer)
         extracted = extraction_by_index.get(index)
         if extracted is not None:
@@ -459,7 +496,7 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         results.append(
             QueryResult(
                 query=query,
-                engine="ChatGPT",
+                engine=engine_name,
                 brand_mentioned=mentioned,
                 competitors_detected=competitors,
                 confidence=confidence,
