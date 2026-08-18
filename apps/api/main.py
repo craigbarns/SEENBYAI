@@ -17,6 +17,7 @@ import stripe
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AnyHttpUrl, BaseModel, Field
+from email_service import NOTIFY_ADDRESS, notify_scan_completed_email, report_ready_email, send_email
 from site_audit import SiteAudit, UnsafeWebsiteUrl, audit_site, validate_public_http_url
 from sqlalchemy import create_engine, text
 
@@ -1051,6 +1052,29 @@ def healthcheck():
     }
 
 
+async def dispatch_scan_emails(dashboard: DashboardData, requester_email: str) -> None:
+    # Fire-and-forget: a failed or slow email must never affect the scan
+    # response, so this runs as a background task and swallows its own errors.
+    dashboard_url = f"{FRONTEND_URL}/dashboard?site_id={dashboard.site_id}"
+    try:
+        subject, html = report_ready_email(dashboard.company_name, dashboard_url)
+        await send_email(requester_email, subject, html)
+
+        if NOTIFY_ADDRESS:
+            subject, html = notify_scan_completed_email(
+                dashboard.company_name,
+                requester_email,
+                dashboard.city,
+                dashboard.industry,
+                dashboard.visibility_score,
+                dashboard.mode,
+                dashboard_url,
+            )
+            await send_email(NOTIFY_ADDRESS, subject, html)
+    except Exception:
+        pass
+
+
 @app.post("/api/onboarding")
 async def onboard_site(payload: OnboardingRequest, http_request: Request):
     await enforce_scan_rate_limit(http_request, payload)
@@ -1083,6 +1107,7 @@ async def onboard_site(payload: OnboardingRequest, http_request: Request):
         dashboard.unlocked = not BILLING_ENABLED
         save_report(dashboard, email=payload.email)
         record_history(dashboard)
+        asyncio.create_task(dispatch_scan_emails(dashboard, payload.email))
         return {"site_id": site_id, "status": "completed", "mode": dashboard.mode}
     finally:
         SCAN_GATE.release()
