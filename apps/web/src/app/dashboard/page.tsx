@@ -344,7 +344,7 @@ export default async function DashboardPage({
           <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-foreground/8 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <Table className="min-w-[900px]">
-                <TableHeader className="bg-[#f3f4ed]"><TableRow className="hover:bg-transparent"><TableHead className="w-[390px] px-6 py-4 font-extrabold text-foreground">Query tested</TableHead><TableHead className="font-extrabold text-foreground">Engine</TableHead><TableHead className="text-center font-extrabold text-foreground">Mention</TableHead><TableHead className="font-extrabold text-foreground">Competitors cited</TableHead><TableHead className="pr-6 text-right font-extrabold text-foreground">Confidence</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-[#f3f4ed]"><TableRow className="hover:bg-transparent"><TableHead className="w-[420px] px-6 py-4 font-extrabold text-foreground">Query tested</TableHead><TableHead className="font-extrabold text-foreground">Engine</TableHead><TableHead className="text-center font-extrabold text-foreground">Mention</TableHead><TableHead className="pr-6 font-extrabold text-foreground">Recommended instead</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {(data.unlocked ? data.queries : data.queries.slice(0, 3)).map((query, index) => (
                     <TableRow className="hover:bg-[#f8f8f3]" key={`${query.engine}-${query.query}-${index}`}>
@@ -364,13 +364,12 @@ export default async function DashboardPage({
                       </TableCell>
                       <TableCell><Badge variant="outline" className="bg-white"><span className={`mr-2 size-2 rounded-full ${engineColors[query.engine] ?? "bg-slate-400"}`} />{query.engine}</Badge></TableCell>
                       <TableCell className="text-center">{query.brand_mentioned ? <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600" aria-label="Brand mentioned"><CheckCircle2 className="size-5" aria-hidden="true" /></span> : <span className="inline-flex size-8 items-center justify-center rounded-full bg-red-50 text-red-500" aria-label="Brand not mentioned"><XCircle className="size-5" aria-hidden="true" /></span>}</TableCell>
-                      <TableCell>{query.competitors_detected.length ? <div className="flex flex-wrap gap-1.5">{query.competitors_detected.map((competitor) => data.unlocked || competitor === data.top_competitor ? <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800" key={competitor}>{competitor}</span> : <span className="inline-flex items-center gap-1 rounded-md border border-foreground/10 bg-foreground/5 px-2 py-1 text-xs font-bold text-muted-foreground" key={competitor}><LockKeyhole className="size-3" aria-hidden="true" />{maskName(competitor)}</span>)}</div> : <span className="text-sm italic text-muted-foreground">None</span>}</TableCell>
-                      <TableCell className="pr-6 text-right font-extrabold tabular-nums">{Math.round(query.confidence * 100)}%</TableCell>
+                      <TableCell className="pr-6">{query.competitors_detected.length ? <div className="flex flex-wrap gap-1.5">{query.competitors_detected.map((competitor) => data.unlocked || competitor === data.top_competitor ? <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800" key={competitor}>{competitor}</span> : <span className="inline-flex items-center gap-1 rounded-md border border-foreground/10 bg-foreground/5 px-2 py-1 text-xs font-bold text-muted-foreground" key={competitor}><LockKeyhole className="size-3" aria-hidden="true" />{maskName(competitor)}</span>)}</div> : <span className="text-sm italic text-muted-foreground">No business named</span>}</TableCell>
                     </TableRow>
                   ))}
                   {!data.unlocked && data.queries.length > 3 && (
                     <TableRow className="hover:bg-transparent">
-                      <TableCell colSpan={5} className="p-0">
+                      <TableCell colSpan={4} className="p-0">
                         <div className="flex flex-col items-center justify-center gap-3 bg-[#f8f8f3] px-6 py-8 sm:flex-row sm:gap-5">
                           <span className="flex items-center gap-2 font-bold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden="true" /> {data.queries.length - 3} more queries — plus what each AI actually said — are hidden in the preview</span>
                           <UnlockButton siteId={data.site_id} size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>

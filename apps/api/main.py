@@ -317,6 +317,10 @@ QUERY_GENERATION_SYSTEM_PROMPT = (
     "Never mention the business name itself. Vary the intent: best, recommendation, "
     "comparison, urgency, reviews, nearby. Every query MUST explicitly name the city — "
     'never use vague locations like "near me" or "close to home". '
+    "Every query must be one where the natural answer is a NAMED LOCAL BUSINESS a consumer "
+    "could hire or visit. Never ask which website, platform, app, marketplace or directory to "
+    "use, and never ask for general market commentary, prices or trends — those answers name "
+    "portals and statistics instead of businesses, which wastes the test. "
     "CRITICAL: write the questions in the language consumers in that city most likely use "
     "(e.g. French for Marseille, English for Austin, Spanish for Madrid). "
     'Respond with JSON only: {"queries": ["...", "..."]}'
@@ -351,6 +355,40 @@ def make_excerpt(answer: str, limit: int = 350) -> str:
     if len(collapsed) <= limit:
         return collapsed
     return collapsed[:limit].rsplit(" ", 1)[0] + "…"
+
+
+# Listing portals, marketplaces and directories are not competitors a local
+# business can displace — being told to "beat Zillow" is useless advice.
+AGGREGATOR_TOKENS = {
+    "seloger", "leboncoin", "bienici", "logicimmo", "pap", "immojeunes", "meilleursagents",
+    "avendrealouer", "figaroimmo", "ouestfranceimmo", "immoregion", "superimmo", "immonot",
+    "zillow", "redfin", "trulia", "realtor", "homes", "apartments", "rentcom", "loopnet",
+    "yelp", "google", "googlemaps", "tripadvisor", "trustpilot", "pagesjaunes", "yellowpages",
+    "booking", "airbnb", "expedia", "hotelscom", "opentable", "thefork", "lafourchette",
+    "angi", "angieslist", "thumbtack", "houzz", "homeadvisor", "porch", "taskrabbit",
+    "doctolib", "zocdoc", "healthgrades", "indeed", "linkedin", "facebook", "instagram",
+    "amazon", "ebay", "etsy", "craigslist", "nextdoor", "bark", "checkatrade",
+}
+AGGREGATOR_HINTS = (
+    "annonce", "annonces", "listing", "listings", "marketplace", "portail", "portal",
+    "directory", "annuaire", "comparateur", "aggregator", "plateforme", "platform",
+)
+
+
+def is_aggregator(name: str) -> bool:
+    normalized = normalize_name(name)
+    if not normalized:
+        return True
+    # Strip common TLDs so "seloger.com" matches "seloger".
+    for suffix in ("com", "fr", "net", "org", "co", "io", "app", "es", "de", "couk"):
+        if normalized.endswith(suffix) and len(normalized) > len(suffix) + 2:
+            stripped = normalized[: -len(suffix)]
+            if stripped in AGGREGATOR_TOKENS:
+                return True
+    if normalized in AGGREGATOR_TOKENS:
+        return True
+    lowered = name.lower()
+    return any(hint in lowered for hint in AGGREGATOR_HINTS)
 
 
 def normalize_name(value: str) -> str:
@@ -399,21 +437,28 @@ async def generate_queries_llm(client, request: OnboardingRequest) -> Optional[L
         return None
 
 
-async def ask_engine(client, query: str, model: str = OPENAI_MODEL) -> Optional[str]:
-    try:
-        response = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
-                {"role": "user", "content": query},
-            ],
-            max_tokens=400,
-            temperature=0.7,
-            timeout=45,
-        )
-        return response.choices[0].message.content or ""
-    except Exception:
-        return None
+async def ask_engine(
+    client, query: str, model: str = OPENAI_MODEL, attempts: int = 1
+) -> Optional[str]:
+    for attempt in range(attempts):
+        try:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
+                    {"role": "user", "content": query},
+                ],
+                max_tokens=400,
+                temperature=0.7,
+                timeout=45,
+            )
+            return response.choices[0].message.content or ""
+        except Exception as error:
+            # Rate limits are worth waiting out; anything else won't fix itself.
+            if attempt + 1 >= attempts or "429" not in str(error):
+                return None
+            await asyncio.sleep(2 * (attempt + 1))
+    return None
 
 
 async def ask_claude(client, query: str) -> Optional[str]:
@@ -537,36 +582,39 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         )
     )
     queries = await generate_queries_llm(client, request) or build_queries(request)
-    semaphore = asyncio.Semaphore(6)
 
-    engines: list[tuple[str, str, object]] = [("ChatGPT", "openai", client)]
+    # Each engine gets its own concurrency budget: Perplexity rate-limits hard
+    # above ~3 parallel requests, and a shared semaphore let it starve.
+    engines: list[tuple[str, str, object, int]] = [("ChatGPT", "openai", client, 5)]
     if ANTHROPIC_API_KEY:
         from anthropic import AsyncAnthropic
 
-        engines.append(("Claude", "anthropic", AsyncAnthropic(api_key=ANTHROPIC_API_KEY)))
+        engines.append(("Claude", "anthropic", AsyncAnthropic(api_key=ANTHROPIC_API_KEY), 5))
     if PERPLEXITY_API_KEY:
         engines.append(
             (
                 "Perplexity",
                 "perplexity",
                 AsyncOpenAI(api_key=PERPLEXITY_API_KEY, base_url="https://api.perplexity.ai"),
+                2,
             )
         )
 
-    async def guarded_ask(kind: str, engine_client, query: str) -> Optional[str]:
-        async with semaphore:
+    async def guarded_ask(kind: str, engine_client, query: str, gate: asyncio.Semaphore) -> Optional[str]:
+        async with gate:
             if kind == "anthropic":
                 return await ask_claude(engine_client, query)
             if kind == "perplexity":
-                return await ask_engine(engine_client, query, model=PERPLEXITY_MODEL)
+                return await ask_engine(engine_client, query, model=PERPLEXITY_MODEL, attempts=3)
             return await ask_engine(engine_client, query)
 
     labels: list[tuple[str, str]] = []
     tasks = []
-    for engine_name, kind, engine_client in engines:
+    for engine_name, kind, engine_client, concurrency in engines:
+        gate = asyncio.Semaphore(concurrency)
         for query in queries:
             labels.append((engine_name, query))
-            tasks.append(guarded_ask(kind, engine_client, query))
+            tasks.append(guarded_ask(kind, engine_client, query, gate))
 
     answers = await asyncio.gather(*tasks)
     answered = [
@@ -606,7 +654,11 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
             confidence = 0.7
             businesses = []
 
-        competitors = [name for name in businesses if not brand_in_text(variants, name)][:3]
+        competitors = [
+            name
+            for name in businesses
+            if not brand_in_text(variants, name) and not is_aggregator(name)
+        ][:3]
         if mentioned:
             brand_mentions += 1
         competitor_mentions.update(competitors)
