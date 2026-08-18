@@ -37,13 +37,42 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Article",
-    headline: guide.title,
-    description: guide.description,
-    datePublished: guide.datePublished,
-    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    mainEntityOfPage: `${SITE_URL}/guides/${guide.slug}`,
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": SITE_URL,
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Guides",
+            "item": `${SITE_URL}/guides`,
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": guide.title,
+            "item": `${SITE_URL}/guides/${guide.slug}`,
+          },
+        ],
+      },
+      {
+        "@type": "Article",
+        "headline": guide.title,
+        "description": guide.description,
+        "datePublished": guide.datePublished,
+        "dateModified": guide.datePublished,
+        "mainEntityOfPage": `${SITE_URL}/guides/${guide.slug}`,
+        "inLanguage": "en-US",
+        "author": { "@type": "Organization", "name": SITE_NAME, "url": SITE_URL },
+        "publisher": { "@type": "Organization", "name": SITE_NAME, "url": SITE_URL },
+      },
+    ],
   };
 
   const otherGuides = guides.filter((other) => other.slug !== guide.slug).slice(0, 3);

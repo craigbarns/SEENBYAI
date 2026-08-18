@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import { LogoMark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { guides } from "@/lib/guides";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "AI Visibility Guides — GEO & AI SEO for Local Businesses",
@@ -16,8 +17,40 @@ export const metadata: Metadata = {
 };
 
 export default function GuidesPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": SITE_URL,
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Guides",
+            "item": `${SITE_URL}/guides`,
+          },
+        ],
+      },
+      {
+        "@type": "CollectionPage",
+        "name": "AI Visibility Guides — GEO & AI SEO for Local Businesses",
+        "description":
+          "Practical guides on generative engine optimization (GEO): how to get recommended by ChatGPT, AI SEO playbooks and structured data for local businesses.",
+        "url": `${SITE_URL}/guides`,
+        "publisher": { "@type": "Organization", "name": SITE_NAME, "url": SITE_URL },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-[#f8f8f3]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
           <Link className="flex items-center gap-2.5" href="/" aria-label="GetInTheAnswer, home">
