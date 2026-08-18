@@ -177,6 +177,12 @@ export default async function DashboardPage({
                   ? `${uniqueQuestionCount} customer questions tested across ${engineNames.length} AI engines, for ${data.total_queries} answer checks.`
                   : `${uniqueQuestionCount} customer questions simulated across ${engineNames.length} AI engines, for ${data.total_queries} answer checks.`}
               </p>
+              {data.mode === "live" && data.scanned_at && (
+                <p className="mt-2 text-xs font-semibold text-white/55">
+                  Measured on {new Date(data.scanned_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                  {data.engines_used.length > 0 ? ` · ${data.engines_used.join(", ")}` : ""} — a single-sample snapshot; AI answers can vary between runs.
+                </p>
+              )}
               <a className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-lime-300 hover:text-lime-200" href={data.website_url} target="_blank" rel="noreferrer">
                 {data.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                 <ExternalLink className="size-3.5" aria-hidden="true" />

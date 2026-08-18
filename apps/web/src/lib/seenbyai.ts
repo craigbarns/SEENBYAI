@@ -36,6 +36,8 @@ export interface DashboardData {
   has_subscription: boolean;
   history: ScorePoint[];
   site_audit?: SiteAudit | null;
+  scanned_at?: string | null;
+  engines_used: string[];
 }
 
 export interface SiteCheck {

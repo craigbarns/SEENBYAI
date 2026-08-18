@@ -1,6 +1,7 @@
 import asyncio
 import ipaddress
 import json
+from datetime import datetime, timezone
 import os
 import random
 import re
@@ -172,6 +173,8 @@ class DashboardData(BaseModel):
     history: List[ScorePoint] = Field(default_factory=list)
     site_audit: Optional[SiteAudit] = None
     has_subscription: bool = False
+    scanned_at: Optional[str] = None
+    engines_used: List[str] = Field(default_factory=list)
 
 
 def client_identifier(http_request: Request) -> str:
@@ -906,6 +909,8 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         recommendations=recommendations,
         mode="live",
         site_audit=site,
+        scanned_at=datetime.now(timezone.utc).isoformat(),
+        engines_used=sorted({engine_name for engine_name, _, _, _ in engines}),
     )
 
 
@@ -966,6 +971,8 @@ def generate_mock_dashboard_data(site_id: str, request: OnboardingRequest) -> Da
         queries=results,
         recommendations=build_recommendations(request),
         mode="simulation",
+        scanned_at=datetime.now(timezone.utc).isoformat(),
+        engines_used=sorted(set(engines)),
     )
 
 
