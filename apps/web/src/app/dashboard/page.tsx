@@ -25,6 +25,7 @@ import {
 
 import { LogoMark } from "@/components/logo";
 import { ManageSubscriptionButton } from "@/components/manage-subscription-button";
+import { ShareScoreButton } from "@/components/share-score-button";
 import { UnlockButton } from "@/components/unlock-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -199,6 +200,14 @@ export default async function DashboardPage({
               <div className="max-w-56 sm:max-w-40">
                 <p className="font-extrabold text-lime-300">{scoreSummary.label}</p>
                 <p className="mt-2 text-sm leading-5 text-white/75">{scoreSummary.copy}</p>
+                <div className="mt-3">
+                  <ShareScoreButton
+                    companyName={data.company_name}
+                    score={safeScore}
+                    city={data.city}
+                    siteId={data.site_id}
+                  />
+                </div>
               </div>
             </div>
           </div>

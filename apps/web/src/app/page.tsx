@@ -383,38 +383,55 @@ export default function Home() {
             <h2 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">Your first scan is on us.</h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">See where you stand for free, then track and improve your AI visibility over time.</p>
 
-            <div className="mx-auto mt-10 grid max-w-4xl gap-5 text-left lg:grid-cols-2">
+            <div className="mx-auto mt-10 grid max-w-6xl gap-5 text-left lg:grid-cols-3">
               <div className="flex flex-col overflow-hidden rounded-[1.75rem] border border-foreground/10 bg-white shadow-sm">
-                <div className="p-6 sm:p-8">
+                <div className="p-6 sm:p-7">
                   <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Discovery scan</p>
-                  <div className="mt-2 flex items-end gap-2"><span className="text-5xl font-black tracking-[-0.06em]">$0</span><span className="pb-1.5 text-sm font-semibold text-muted-foreground">no credit card required</span></div>
+                  <div className="mt-2 flex items-end gap-2"><span className="text-4xl font-black tracking-[-0.06em]">$0</span><span className="pb-1 text-xs font-semibold text-muted-foreground">no credit card required</span></div>
                   <div className="mt-6 grid gap-3 text-sm font-semibold">
                     {["10 tailored customer questions", "Real AI engine scan", "Your visibility score", "Your #1 competitor revealed"].map((item) => (
                       <span className="flex items-center gap-2" key={item}><Check className="size-4 text-emerald-700" aria-hidden="true" /> {item}</span>
                     ))}
                   </div>
                 </div>
-                <div className="mt-auto border-t border-foreground/8 bg-[#f3f4ed] p-6 sm:p-8">
-                  <Button asChild size="lg" variant="outline" className="h-13 w-full rounded-full bg-white px-6">
+                <div className="mt-auto border-t border-foreground/8 bg-[#f3f4ed] p-6">
+                  <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full bg-white px-6">
                     <Link href="/onboarding">Try it free <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
                   </Button>
                 </div>
               </div>
 
               <div className="relative flex flex-col overflow-hidden rounded-[1.75rem] bg-[#173b35] text-white shadow-xl shadow-primary/15">
-                <span className="absolute right-5 top-5 rounded-full bg-lime-300 px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-[#173b35]">Full access</span>
-                <div className="p-6 sm:p-8">
+                <span className="absolute right-5 top-5 rounded-full bg-lime-300 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-[#173b35]">Most popular</span>
+                <div className="p-6 sm:p-7">
                   <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-lime-300">Pro monitoring</p>
-                  <div className="mt-2 flex items-end gap-2"><span className="text-5xl font-black tracking-[-0.06em]">$29</span><span className="pb-1.5 text-sm font-semibold text-white/60">per month · cancel anytime</span></div>
+                  <div className="mt-2 flex items-end gap-2"><span className="text-4xl font-black tracking-[-0.06em]">$29</span><span className="pb-1 text-xs font-semibold text-white/60">/ month · cancel anytime</span></div>
                   <div className="mt-6 grid gap-3 text-sm font-semibold text-white/85">
-                    {["Every competitor named", "The engines' actual answers, quoted", "Personalized action plan built from real AI answers", "Automatic weekly re-scans", "Score history over time"].map((item) => (
+                    {["Every competitor named", "The engines' actual answers, quoted", "Action plan from live AI answers", "Automatic weekly re-scans", "Score history over time"].map((item) => (
                       <span className="flex items-center gap-2" key={item}><Check className="size-4 text-lime-300" aria-hidden="true" /> {item}</span>
                     ))}
                   </div>
                 </div>
-                <div className="mt-auto border-t border-white/10 p-6 sm:p-8">
-                  <Button asChild size="lg" className="h-13 w-full rounded-full bg-lime-300 px-6 font-extrabold text-[#173b35] hover:bg-lime-200">
-                    <Link href="/onboarding">Start with a free scan <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
+                <div className="mt-auto border-t border-white/10 p-6">
+                  <Button asChild size="lg" className="h-12 w-full rounded-full bg-lime-300 px-6 font-extrabold text-[#173b35] hover:bg-lime-200">
+                    <Link href="/onboarding">Start Pro scan <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col overflow-hidden rounded-[1.75rem] border border-foreground/10 bg-white shadow-sm">
+                <div className="p-6 sm:p-7">
+                  <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Agency &amp; Multi-location</p>
+                  <div className="mt-2 flex items-end gap-2"><span className="text-4xl font-black tracking-[-0.06em]">$149</span><span className="pb-1 text-xs font-semibold text-muted-foreground">/ month</span></div>
+                  <div className="mt-6 grid gap-3 text-sm font-semibold">
+                    {["Up to 25 business locations", "White-label client reports", "Batch AI re-scanning", "Competitor tracking per city", "Priority agency support"].map((item) => (
+                      <span className="flex items-center gap-2" key={item}><Check className="size-4 text-emerald-700" aria-hidden="true" /> {item}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-auto border-t border-foreground/8 bg-[#f3f4ed] p-6">
+                  <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full bg-white px-6">
+                    <Link href="/onboarding">Get Agency access <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
                   </Button>
                 </div>
               </div>
