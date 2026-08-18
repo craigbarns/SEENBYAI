@@ -810,8 +810,18 @@ def confirm_checkout(session_id: str, site_id: str):
         session = stripe.checkout.Session.retrieve(session_id)
     except Exception:
         raise HTTPException(status_code=404, detail="Checkout session not found")
-    if session.get("payment_status") == "paid" and (session.get("metadata") or {}).get("site_id") == site_id:
-        unlock_report(site_id, session.get("customer"), session.get("subscription"))
+    # stripe-python v15 objects are attribute-access only — .get() raises AttributeError.
+    payment_status = getattr(session, "payment_status", None)
+    metadata = getattr(session, "metadata", None)
+    meta_site_id = getattr(metadata, "site_id", None) if metadata is not None else None
+    if payment_status in ("paid", "no_payment_required") and meta_site_id == site_id:
+        customer = getattr(session, "customer", None)
+        subscription = getattr(session, "subscription", None)
+        unlock_report(
+            site_id,
+            customer if isinstance(customer, str) else getattr(customer, "id", None),
+            subscription if isinstance(subscription, str) else getattr(subscription, "id", None),
+        )
         return {"unlocked": True}
     return {"unlocked": False}
 
