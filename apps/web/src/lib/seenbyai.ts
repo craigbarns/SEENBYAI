@@ -8,6 +8,7 @@ export interface QueryResult {
   brand_mentioned: boolean;
   competitors_detected: string[];
   confidence: number;
+  answer_excerpt?: string | null;
 }
 
 export interface Recommendation {

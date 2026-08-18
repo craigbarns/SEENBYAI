@@ -397,7 +397,7 @@ export default function Home() {
                   <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-lime-300">Pro monitoring</p>
                   <div className="mt-2 flex items-end gap-2"><span className="text-5xl font-black tracking-[-0.06em]">$29</span><span className="pb-1.5 text-sm font-semibold text-white/60">per month · cancel anytime</span></div>
                   <div className="mt-6 grid gap-3 text-sm font-semibold text-white/85">
-                    {["Every competitor named", "All queries and full answers data", "Complete prioritized action plan", "Automatic weekly re-scans", "Score history over time"].map((item) => (
+                    {["Every competitor named", "The engines' actual answers, quoted", "Personalized action plan built from real AI answers", "Automatic weekly re-scans", "Score history over time"].map((item) => (
                       <span className="flex items-center gap-2" key={item}><Check className="size-4 text-lime-300" aria-hidden="true" /> {item}</span>
                     ))}
                   </div>

@@ -102,6 +102,7 @@ class QueryResult(BaseModel):
     brand_mentioned: bool
     competitors_detected: List[str]
     confidence: float
+    answer_excerpt: Optional[str] = None
 
 
 class Recommendation(BaseModel):
@@ -317,6 +318,19 @@ QUERY_GENERATION_SYSTEM_PROMPT = (
     'Respond with JSON only: {"queries": ["...", "..."]}'
 )
 
+RECOMMENDATION_SYSTEM_PROMPT = (
+    "You are an AI-visibility (GEO) consultant for local businesses. You are given the real answers "
+    "that AI engines gave when consumers asked for recommendations in the business's market, plus "
+    "whether the business was mentioned and which competitors were. Produce specific, actionable "
+    "recommendations that will increase how often AI engines recommend this business. "
+    "Be concrete: name the competitors that dominate the answers, reference what the engines actually "
+    "said, and tie each recommendation to evidence from the answers. Each description is 2-4 sentences "
+    "written directly to the business owner. Write in the same language as the consumer queries. "
+    'Respond with JSON only: {"recommendations": [{"title": "...", "description": "...", '
+    '"priority": "high|medium|low", "estimated_impact": "high|medium|low"}]} — 3 to 5 items, '
+    "highest priority first."
+)
+
 EXTRACTION_SYSTEM_PROMPT = (
     "You analyze AI assistant answers to local business recommendation questions. "
     "For each numbered answer, list the specific business names explicitly mentioned "
@@ -324,6 +338,13 @@ EXTRACTION_SYSTEM_PROMPT = (
     "and say whether the target brand is mentioned, including close or partial variants of its name. "
     'Respond with JSON only: {"results": [{"index": 1, "brand_mentioned": false, "businesses": ["..."]}]}'
 )
+
+
+def make_excerpt(answer: str, limit: int = 350) -> str:
+    collapsed = re.sub(r"\s+", " ", answer).strip()
+    if len(collapsed) <= limit:
+        return collapsed
+    return collapsed[:limit].rsplit(" ", 1)[0] + "…"
 
 
 def normalize_name(value: str) -> str:
@@ -426,6 +447,62 @@ async def extract_mentions(client, brand: str, answers: List[str]) -> Optional[l
         return None
 
 
+async def generate_recommendations_llm(
+    client,
+    request: OnboardingRequest,
+    results: List[QueryResult],
+    top_competitors: List[tuple],
+) -> Optional[List[Recommendation]]:
+    digest_lines = []
+    for result in results:
+        digest_lines.append(
+            f"[{result.engine}] Q: {result.query}\n"
+            f"Business mentioned: {'yes' if result.brand_mentioned else 'no'} | "
+            f"Competitors cited: {', '.join(result.competitors_detected) or 'none'}\n"
+            f"Answer excerpt: {result.answer_excerpt or '(unavailable)'}"
+        )
+    mentions = sum(1 for r in results if r.brand_mentioned)
+    competitors_summary = ", ".join(f"{name} ({count} mentions)" for name, count in top_competitors[:5]) or "none"
+    profile = (
+        f"Business: {request.companyName.strip()}\n"
+        f"Website: {request.websiteUrl}\n"
+        f"City: {request.city.strip().title()} | Industry: {request.industry.strip()} | "
+        f"Services: {(request.services or request.industry).strip()}\n"
+        f"Visibility: mentioned in {mentions}/{len(results)} answers | Top competitors: {competitors_summary}"
+    )
+    try:
+        response = await client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": RECOMMENDATION_SYSTEM_PROMPT},
+                {"role": "user", "content": f"{profile}\n\n--- REAL AI ANSWERS ---\n\n" + "\n\n".join(digest_lines)},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=1200,
+            temperature=0.3,
+            timeout=60,
+        )
+        payload = json.loads(response.choices[0].message.content or "{}")
+        items = payload.get("recommendations")
+        if not isinstance(items, list):
+            return None
+        recommendations = []
+        for item in items[:5]:
+            if not isinstance(item, dict):
+                continue
+            title = str(item.get("title", "")).strip()
+            description = str(item.get("description", "")).strip()
+            priority = item.get("priority") if item.get("priority") in ("high", "medium", "low") else "medium"
+            impact = item.get("estimated_impact") if item.get("estimated_impact") in ("high", "medium", "low") else "medium"
+            if title and description:
+                recommendations.append(
+                    Recommendation(title=title, description=description, priority=priority, estimated_impact=impact)
+                )
+        return recommendations if len(recommendations) >= 3 else None
+    except Exception:
+        return None
+
+
 async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardData:
     from openai import AsyncOpenAI
 
@@ -512,6 +589,7 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
                 brand_mentioned=mentioned,
                 competitors_detected=competitors,
                 confidence=confidence,
+                answer_excerpt=make_excerpt(answer),
             )
         )
 
@@ -519,6 +597,10 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         top_competitor, top_competitor_mentions = competitor_mentions.most_common(1)[0]
     else:
         top_competitor, top_competitor_mentions = "No competitor detected", 0
+
+    recommendations = await generate_recommendations_llm(
+        client, request, results, competitor_mentions.most_common(5)
+    ) or build_recommendations(request)
 
     return DashboardData(
         site_id=site_id,
@@ -533,7 +615,7 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         top_competitor=top_competitor,
         top_competitor_mentions=top_competitor_mentions,
         queries=results,
-        recommendations=build_recommendations(request),
+        recommendations=recommendations,
         mode="live",
     )
 

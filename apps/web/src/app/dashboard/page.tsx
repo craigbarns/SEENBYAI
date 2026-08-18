@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronRight,
   CheckCircle2,
   CircleAlert,
   ExternalLink,
@@ -307,7 +308,20 @@ export default async function DashboardPage({
                 <TableBody>
                   {(data.unlocked ? data.queries : data.queries.slice(0, 3)).map((query, index) => (
                     <TableRow className="hover:bg-[#f8f8f3]" key={`${query.engine}-${query.query}-${index}`}>
-                      <TableCell className="px-6 py-4 font-semibold leading-6">{query.query}</TableCell>
+                      <TableCell className="px-6 py-4 font-semibold leading-6">
+                        {query.query}
+                        {data.unlocked && query.answer_excerpt && (
+                          <details className="group mt-2">
+                            <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 [&::-webkit-details-marker]:hidden">
+                              <ChevronRight className="size-3 transition-transform group-open:rotate-90" aria-hidden="true" />
+                              What {query.engine} actually said
+                            </summary>
+                            <blockquote className="mt-2 rounded-xl border-l-2 border-emerald-600 bg-[#f8f8f3] p-3 text-xs font-normal italic leading-5 text-muted-foreground">
+                              “{query.answer_excerpt}”
+                            </blockquote>
+                          </details>
+                        )}
+                      </TableCell>
                       <TableCell><Badge variant="outline" className="bg-white"><span className={`mr-2 size-2 rounded-full ${engineColors[query.engine] ?? "bg-slate-400"}`} />{query.engine}</Badge></TableCell>
                       <TableCell className="text-center">{query.brand_mentioned ? <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600" aria-label="Brand mentioned"><CheckCircle2 className="size-5" aria-hidden="true" /></span> : <span className="inline-flex size-8 items-center justify-center rounded-full bg-red-50 text-red-500" aria-label="Brand not mentioned"><XCircle className="size-5" aria-hidden="true" /></span>}</TableCell>
                       <TableCell>{query.competitors_detected.length ? <div className="flex flex-wrap gap-1.5">{query.competitors_detected.map((competitor) => data.unlocked || competitor === data.top_competitor ? <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800" key={competitor}>{competitor}</span> : <span className="inline-flex items-center gap-1 rounded-md border border-foreground/10 bg-foreground/5 px-2 py-1 text-xs font-bold text-muted-foreground" key={competitor}><LockKeyhole className="size-3" aria-hidden="true" />{maskName(competitor)}</span>)}</div> : <span className="text-sm italic text-muted-foreground">None</span>}</TableCell>
@@ -318,7 +332,7 @@ export default async function DashboardPage({
                     <TableRow className="hover:bg-transparent">
                       <TableCell colSpan={5} className="p-0">
                         <div className="flex flex-col items-center justify-center gap-3 bg-[#f8f8f3] px-6 py-8 sm:flex-row sm:gap-5">
-                          <span className="flex items-center gap-2 font-bold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden="true" /> {data.queries.length - 3} more queries are hidden in the preview</span>
+                          <span className="flex items-center gap-2 font-bold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden="true" /> {data.queries.length - 3} more queries — plus what each AI actually said — are hidden in the preview</span>
                           <UnlockButton siteId={data.site_id} size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
                         </div>
                       </TableCell>
