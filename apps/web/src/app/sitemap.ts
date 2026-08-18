@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { guides } from "@/lib/guides";
+import { industries } from "@/lib/industries";
 import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -17,10 +18,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${SITE_URL}/onboarding`,
       lastModified: now,
       changeFrequency: "monthly",
-      priority: 0.8,
+      priority: 0.9,
     },
     {
       url: `${SITE_URL}/guides`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/ai-seo-for`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.8,
@@ -36,6 +43,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(guide.datePublished),
       changeFrequency: "monthly" as const,
       priority: 0.7,
+    })),
+    ...industries.map((industry) => ({
+      url: `${SITE_URL}/ai-seo-for/${industry.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
     })),
   ];
 }

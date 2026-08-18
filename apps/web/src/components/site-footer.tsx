@@ -13,6 +13,7 @@ export function SiteFooter() {
           </Link>
           <p className="text-sm text-muted-foreground md:ml-3">© 2026 WEMADE. AI visibility, made actionable.</p>
           <nav className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Footer navigation">
+            <Link className="hover:text-foreground" href="/ai-seo-for">Industries</Link>
             <Link className="hover:text-foreground" href="/guides">Guides</Link>
             <Link className="hover:text-foreground" href="/onboarding">Run a scan</Link>
             <Link className="hover:text-foreground" href="/legal">Legal</Link>
