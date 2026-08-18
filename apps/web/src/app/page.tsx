@@ -28,7 +28,12 @@ const faqs = [
   {
     question: "Is the free scan really free?",
     answer:
-      "Yes. The discovery scan runs real queries against AI engines and shows your visibility score and your #1 competitor at no cost, with no credit card required. The Pro plan ($29/month) unlocks every competitor name, all queries, your full action plan, weekly re-scans and score history.",
+      "Yes. We generate 10 customer questions tailored to your market and test them across the available AI engines, producing up to 30 answer checks. You get your visibility score and #1 competitor at no cost, with no credit card required. Pro ($29/month) unlocks every competitor, answer and action, plus weekly re-scans.",
+  },
+  {
+    question: "How is the visibility score calculated?",
+    answer:
+      "Each customer question is tested separately on ChatGPT, Claude, Gemini and Perplexity when those engines are available. Every question-and-engine pair is one answer check. Your score is the percentage of those answers that mention your business, rounded to a number from 0 to 100.",
   },
   {
     question: "How do you know whether an AI mentions my business?",
@@ -49,6 +54,11 @@ const faqs = [
     question: "How often is my visibility re-checked?",
     answer:
       "Pro subscribers get automatic re-scans every week. AI answers shift as models and their search indexes update, so weekly tracking shows whether your improvements are working and alerts you when competitors overtake you.",
+  },
+  {
+    question: "What information do you use for the scan?",
+    answer:
+      "We use the business profile you submit, the public content on your homepage and the answers returned by the AI providers to build your report. Your email associates the report with checkout if you upgrade. We do not sell your information.",
   },
 ];
 
@@ -77,7 +87,7 @@ const structuredData = {
       url: SITE_URL,
       name: SITE_NAME,
       description:
-        "Check if AI engines like ChatGPT, Claude and Perplexity recommend your local business.",
+        "Check if AI engines like ChatGPT, Claude, Gemini and Perplexity recommend your local business.",
       inLanguage: "en-US",
     },
     {
@@ -88,12 +98,12 @@ const structuredData = {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       description:
-        "GetInTheAnswer measures how visible a local business is in AI answers from ChatGPT, Claude and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
+        "GetInTheAnswer measures how visible a local business is in AI answers from ChatGPT, Claude, Gemini and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
       offers: {
         "@type": "Offer",
         price: "0",
         priceCurrency: "USD",
-        description: "Free discovery scan — 20 simulated queries across 3 AI engines, no credit card required.",
+        description: "Free discovery scan — 10 tailored customer questions tested across up to 4 AI engines, no credit card required.",
       },
     },
   ],
@@ -110,9 +120,9 @@ const steps = [
   {
     icon: MessageSquareText,
     number: "02",
-    title: "We simulate the searches",
+    title: "We test the questions",
     description:
-      "GetInTheAnswer measures your mentions and your competitors' across ChatGPT, Claude and Perplexity.",
+      "GetInTheAnswer compares your mentions and your competitors across ChatGPT, Claude, Gemini and Perplexity.",
   },
   {
     icon: ListChecks,
@@ -204,7 +214,7 @@ export default function Home() {
 
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-muted-foreground">
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> No credit card required</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Instant results</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Results in 1–2 minutes</span>
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Easy-to-read data</span>
               </div>
             </div>
@@ -379,7 +389,7 @@ export default function Home() {
                   <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Discovery scan</p>
                   <div className="mt-2 flex items-end gap-2"><span className="text-5xl font-black tracking-[-0.06em]">$0</span><span className="pb-1.5 text-sm font-semibold text-muted-foreground">no credit card required</span></div>
                   <div className="mt-6 grid gap-3 text-sm font-semibold">
-                    {["Real AI engine scan", "Your visibility score", "Your #1 competitor revealed"].map((item) => (
+                    {["10 tailored customer questions", "Real AI engine scan", "Your visibility score", "Your #1 competitor revealed"].map((item) => (
                       <span className="flex items-center gap-2" key={item}><Check className="size-4 text-emerald-700" aria-hidden="true" /> {item}</span>
                     ))}
                   </div>
@@ -435,22 +445,6 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-foreground/8 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-9 sm:px-8 md:flex-row md:items-center lg:px-10">
-          <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="GetInTheAnswer, home">
-            <LogoMark className="size-8" />
-            GetInTheAnswer
-          </Link>
-          <p className="text-sm text-muted-foreground md:ml-3">© 2026 GetInTheAnswer. AI visibility, made actionable.</p>
-          <nav className="flex flex-wrap gap-5 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Footer navigation">
-            <Link className="hover:text-foreground" href="#method">How it works</Link>
-            <Link className="hover:text-foreground" href="#pricing">Pricing</Link>
-            <Link className="hover:text-foreground" href="/guides">Guides</Link>
-            <Link className="hover:text-foreground" href="/guides/get-recommended-by-chatgpt">Get recommended by ChatGPT</Link>
-            <Link className="hover:text-foreground" href="/onboarding">Run a scan</Link>
-          </nav>
-        </div>
-      </footer>
     </div>
   );
 }

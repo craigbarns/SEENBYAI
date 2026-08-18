@@ -1,20 +1,22 @@
 import asyncio
+import ipaddress
 import json
 import os
 import random
 import re
+import time
 import unicodedata
 import uuid
-from collections import Counter
+from collections import Counter, defaultdict, deque
 from typing import List, Optional
+from urllib.parse import urlsplit
 
 import stripe
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AnyHttpUrl, BaseModel, Field
+from site_audit import SiteAudit, UnsafeWebsiteUrl, audit_site, validate_public_http_url
 from sqlalchemy import create_engine, text
-
-from site_audit import SiteAudit, audit_site
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
@@ -22,12 +24,31 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "").strip()
 PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "").strip()
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://getintheanswer.com").rstrip("/")
 LIVE_MODE = bool(OPENAI_API_KEY)
 BILLING_ENABLED = bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID)
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
+
+
+def env_int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, str(default))))
+    except ValueError:
+        return default
+
+
+SCAN_RATE_LIMIT = env_int("SCAN_RATE_LIMIT", 3)
+SCAN_RATE_WINDOW_SECONDS = env_int("SCAN_RATE_WINDOW_SECONDS", 24 * 60 * 60)
+MAX_CONCURRENT_SCANS = env_int("MAX_CONCURRENT_SCANS", 3)
+SCAN_GATE = asyncio.Semaphore(MAX_CONCURRENT_SCANS)
+SCAN_RATE_LOCK = asyncio.Lock()
+SCAN_ATTEMPTS: dict[str, deque[float]] = defaultdict(deque)
+SUBSCRIPTION_ACCESS_STATUSES = {"active", "trialing"}
 
 if STRIPE_SECRET_KEY:
     stripe.api_key = STRIPE_SECRET_KEY
@@ -75,6 +96,14 @@ def init_db() -> None:
         conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS unlocked BOOLEAN NOT NULL DEFAULT FALSE"))
         conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS stripe_customer TEXT"))
         conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS stripe_subscription TEXT"))
+        conn.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS subscription_status TEXT"))
+        conn.execute(
+            text(
+                "UPDATE reports SET subscription_status = 'active' "
+                "WHERE unlocked = TRUE AND stripe_subscription IS NOT NULL "
+                "AND subscription_status IS NULL"
+            )
+        )
         conn.execute(
             text(
                 "CREATE TABLE IF NOT EXISTS score_history ("
@@ -137,8 +166,58 @@ class DashboardData(BaseModel):
     recommendations: List[Recommendation]
     mode: str = "simulation"
     unlocked: bool = True
-    history: List[ScorePoint] = []
+    history: List[ScorePoint] = Field(default_factory=list)
     site_audit: Optional[SiteAudit] = None
+    has_subscription: bool = False
+
+
+def client_identifier(http_request: Request) -> str:
+    candidates = [
+        http_request.headers.get("x-client-ip"),
+        http_request.headers.get("cf-connecting-ip"),
+        http_request.headers.get("x-real-ip"),
+    ]
+    forwarded = http_request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        # The last address is the one appended by the closest trusted proxy.
+        candidates.append(forwarded.split(",")[-1].strip())
+    if http_request.client:
+        candidates.append(http_request.client.host)
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            return str(ipaddress.ip_address(candidate.strip()))
+        except ValueError:
+            continue
+    return "unknown"
+
+
+async def enforce_scan_rate_limit(http_request: Request, payload: OnboardingRequest) -> None:
+    hostname = urlsplit(str(payload.websiteUrl)).hostname or "unknown"
+    keys = {
+        f"ip:{client_identifier(http_request)}",
+        f"email:{payload.email.strip().lower()}",
+        f"site:{hostname.rstrip('.').lower()}",
+    }
+    now = time.monotonic()
+    cutoff = now - SCAN_RATE_WINDOW_SECONDS
+
+    async with SCAN_RATE_LOCK:
+        for key in keys:
+            bucket = SCAN_ATTEMPTS[key]
+            while bucket and bucket[0] < cutoff:
+                bucket.popleft()
+            if len(bucket) >= SCAN_RATE_LIMIT:
+                retry_after = max(1, round(bucket[0] + SCAN_RATE_WINDOW_SECONDS - now))
+                raise HTTPException(
+                    status_code=429,
+                    detail="Free scan limit reached. Please try again later.",
+                    headers={"Retry-After": str(retry_after)},
+                )
+        for key in keys:
+            SCAN_ATTEMPTS[key].append(now)
 
 
 # In-memory fallback when no database is configured (local development).
@@ -174,13 +253,17 @@ def load_report(site_id: str) -> Optional[DashboardData]:
         return MEMORY_DB.get(site_id)
     with db_engine.begin() as conn:
         row = conn.execute(
-            text("SELECT payload, unlocked FROM reports WHERE site_id = :site_id"),
+            text(
+                "SELECT payload, unlocked, stripe_customer, subscription_status "
+                "FROM reports WHERE site_id = :site_id"
+            ),
             {"site_id": site_id},
         ).fetchone()
     if row is None:
         return None
     dashboard = DashboardData.model_validate(row[0])
     dashboard.unlocked = bool(row[1])
+    dashboard.has_subscription = bool(row[2]) and row[3] in SUBSCRIPTION_ACCESS_STATUSES
     dashboard.history = load_history(site_id)
     return dashboard
 
@@ -231,19 +314,62 @@ def get_report_email(site_id: str) -> Optional[str]:
     return row[0] if row else None
 
 
-def unlock_report(site_id: str, customer: Optional[str], subscription: Optional[str]) -> None:
+def set_report_subscription(
+    site_id: str,
+    customer: Optional[str],
+    subscription: Optional[str],
+    status: str,
+) -> None:
+    unlocked = status in SUBSCRIPTION_ACCESS_STATUSES
     if db_engine is None:
         if site_id in MEMORY_DB:
-            MEMORY_DB[site_id].unlocked = True
+            MEMORY_DB[site_id].unlocked = unlocked
+            MEMORY_DB[site_id].has_subscription = unlocked
         return
     with db_engine.begin() as conn:
         conn.execute(
             text(
-                "UPDATE reports SET unlocked = TRUE, stripe_customer = :customer, "
-                "stripe_subscription = :subscription WHERE site_id = :site_id"
+                "UPDATE reports SET unlocked = :unlocked, "
+                "stripe_customer = COALESCE(:customer, stripe_customer), "
+                "stripe_subscription = COALESCE(:subscription, stripe_subscription), "
+                "subscription_status = :status WHERE site_id = :site_id"
             ),
-            {"site_id": site_id, "customer": customer, "subscription": subscription},
+            {
+                "site_id": site_id,
+                "customer": customer,
+                "subscription": subscription,
+                "status": status,
+                "unlocked": unlocked,
+            },
         )
+
+
+def set_subscription_status_by_id(subscription: str, status: str) -> None:
+    if db_engine is None:
+        return
+    with db_engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE reports SET unlocked = :unlocked, subscription_status = :status "
+                "WHERE stripe_subscription = :subscription"
+            ),
+            {
+                "subscription": subscription,
+                "status": status,
+                "unlocked": status in SUBSCRIPTION_ACCESS_STATUSES,
+            },
+        )
+
+
+def get_billing_customer(site_id: str) -> Optional[str]:
+    if db_engine is None:
+        return None
+    with db_engine.begin() as conn:
+        row = conn.execute(
+            text("SELECT stripe_customer FROM reports WHERE site_id = :site_id"),
+            {"site_id": site_id},
+        ).fetchone()
+    return row[0] if row and row[0] else None
 
 
 def build_queries(request: OnboardingRequest) -> List[str]:
@@ -432,7 +558,7 @@ async def generate_queries_llm(client, request: OnboardingRequest) -> Optional[L
         )
         payload = json.loads(response.choices[0].message.content or "{}")
         queries = [q.strip() for q in payload.get("queries", []) if isinstance(q, str) and q.strip()]
-        return queries[:10] if len(queries) >= 5 else None
+        return queries[:10] if len(queries) >= 10 else None
     except Exception:
         return None
 
@@ -477,8 +603,47 @@ async def ask_claude(client, query: str) -> Optional[str]:
         return None
 
 
-async def extract_mentions(client, brand: str, answers: List[str]) -> Optional[list]:
-    numbered = "\n\n".join(f"Answer {index + 1}:\n{answer}" for index, answer in enumerate(answers))
+async def ask_gemini(client, query: str, attempts: int = 2) -> Optional[str]:
+    # Gemini 3.x reasons before answering and that reasoning draws on the same
+    # token budget, so a small max_output_tokens returns a truncated answer.
+    payload = {
+        "systemInstruction": {"parts": [{"text": ANSWER_SYSTEM_PROMPT}]},
+        "contents": [{"parts": [{"text": query}]}],
+        "generationConfig": {"maxOutputTokens": 2000, "temperature": 0.7},
+    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+    for attempt in range(attempts):
+        try:
+            response = await client.post(
+                url,
+                headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+                json=payload,
+            )
+            if response.status_code == 429 and attempt + 1 < attempts:
+                await asyncio.sleep(2 * (attempt + 1))
+                continue
+            if response.status_code >= 400:
+                return None
+            candidates = (response.json() or {}).get("candidates") or []
+            if not candidates:
+                return None
+            parts = (candidates[0].get("content") or {}).get("parts") or []
+            return "".join(part.get("text", "") for part in parts) or None
+        except Exception:
+            if attempt + 1 >= attempts:
+                return None
+            await asyncio.sleep(2 * (attempt + 1))
+    return None
+
+
+EXTRACTION_BATCH_SIZE = 8
+
+
+async def extract_mentions_batch(client, brand: str, batch: List[tuple]) -> list:
+    """Extract mentions for one batch, returning records keyed by global index."""
+    numbered = "\n\n".join(
+        f"Answer {position + 1}:\n{answer}" for position, (_, answer) in enumerate(batch)
+    )
     try:
         response = await client.chat.completions.create(
             model=OPENAI_MODEL,
@@ -492,10 +657,34 @@ async def extract_mentions(client, brand: str, answers: List[str]) -> Optional[l
             timeout=60,
         )
         payload = json.loads(response.choices[0].message.content or "{}")
-        results = payload.get("results")
-        return results if isinstance(results, list) else None
+        records = payload.get("results")
+        if not isinstance(records, list):
+            return []
     except Exception:
-        return None
+        return []
+
+    remapped = []
+    for record in records:
+        if not isinstance(record, dict) or not isinstance(record.get("index"), int):
+            continue
+        position = record["index"] - 1
+        if 0 <= position < len(batch):
+            remapped.append({**record, "index": batch[position][0] + 1})
+    return remapped
+
+
+async def extract_mentions(client, brand: str, answers: List[str]) -> Optional[list]:
+    # One call per batch: asking for 40 records in a single response overflows the
+    # output budget, and a truncated JSON body loses every competitor at once.
+    batches = [
+        list(enumerate(answers))[start : start + EXTRACTION_BATCH_SIZE]
+        for start in range(0, len(answers), EXTRACTION_BATCH_SIZE)
+    ]
+    grouped = await asyncio.gather(
+        *(extract_mentions_batch(client, brand, batch) for batch in batches)
+    )
+    results = [record for group in grouped for record in group]
+    return results or None
 
 
 async def generate_recommendations_llm(
@@ -599,6 +788,12 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
                 2,
             )
         )
+    gemini_client = None
+    if GEMINI_API_KEY:
+        import httpx
+
+        gemini_client = httpx.AsyncClient(timeout=90)
+        engines.append(("Gemini", "gemini", gemini_client, 4))
 
     async def guarded_ask(kind: str, engine_client, query: str, gate: asyncio.Semaphore) -> Optional[str]:
         async with gate:
@@ -606,6 +801,8 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
                 return await ask_claude(engine_client, query)
             if kind == "perplexity":
                 return await ask_engine(engine_client, query, model=PERPLEXITY_MODEL, attempts=3)
+            if kind == "gemini":
+                return await ask_gemini(engine_client, query)
             return await ask_engine(engine_client, query)
 
     labels: list[tuple[str, str]] = []
@@ -616,7 +813,11 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
             labels.append((engine_name, query))
             tasks.append(guarded_ask(kind, engine_client, query, gate))
 
-    answers = await asyncio.gather(*tasks)
+    try:
+        answers = await asyncio.gather(*tasks)
+    finally:
+        if gemini_client is not None:
+            await gemini_client.aclose()
     answered = [
         (engine_name, query, answer)
         for (engine_name, query), answer in zip(labels, answers)
@@ -779,7 +980,9 @@ def reports_due_for_rescan() -> List[str]:
         rows = conn.execute(
             text(
                 "SELECT r.site_id::text FROM reports r "
-                "WHERE r.unlocked = TRUE AND COALESCE("
+                "WHERE r.unlocked = TRUE "
+                "AND r.subscription_status IN ('active', 'trialing') "
+                "AND COALESCE("
                 "(SELECT max(h.created_at) FROM score_history h WHERE h.site_id = r.site_id), "
                 "r.created_at) < now() - make_interval(days => :days) "
                 "LIMIT 20"
@@ -841,26 +1044,49 @@ def healthcheck():
 
 
 @app.post("/api/onboarding")
-async def onboard_site(request: OnboardingRequest):
+async def onboard_site(payload: OnboardingRequest, http_request: Request):
+    await enforce_scan_rate_limit(http_request, payload)
+    try:
+        await validate_public_http_url(str(payload.websiteUrl))
+    except UnsafeWebsiteUrl as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        await asyncio.wait_for(SCAN_GATE.acquire(), timeout=5)
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="The scan service is busy. Please try again in a moment.",
+            headers={"Retry-After": "30"},
+        ) from exc
+
     site_id = str(uuid.uuid4())
-    dashboard = None
-    if LIVE_MODE:
-        try:
-            dashboard = await run_live_scan(site_id, request)
-        except HTTPException:
-            # Live engines unavailable (no credits, outage…): degrade to a
-            # clearly-labeled simulation instead of failing the onboarding.
-            dashboard = None
-    if dashboard is None:
-        dashboard = generate_mock_dashboard_data(site_id, request)
-    dashboard.unlocked = not BILLING_ENABLED
-    save_report(dashboard, email=request.email)
-    record_history(dashboard)
-    return {"site_id": site_id, "status": "completed", "mode": dashboard.mode}
+    try:
+        dashboard = None
+        if LIVE_MODE:
+            try:
+                dashboard = await run_live_scan(site_id, payload)
+            except HTTPException:
+                # Live engines unavailable (no credits, outage…): degrade to a
+                # clearly-labeled simulation instead of failing the onboarding.
+                dashboard = None
+        if dashboard is None:
+            dashboard = generate_mock_dashboard_data(site_id, payload)
+        dashboard.unlocked = not BILLING_ENABLED
+        save_report(dashboard, email=payload.email)
+        record_history(dashboard)
+        return {"site_id": site_id, "status": "completed", "mode": dashboard.mode}
+    finally:
+        SCAN_GATE.release()
 
 
 class CheckoutRequest(BaseModel):
     site_id: str
+
+
+class PortalRequest(BaseModel):
+    site_id: str
+    checkout_session_id: str
 
 
 @app.post("/api/checkout")
@@ -877,12 +1103,52 @@ def create_checkout(body: CheckoutRequest):
     session = stripe.checkout.Session.create(
         mode="subscription",
         line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-        success_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}&session_id={{CHECKOUT_SESSION_ID}}",
+        success_url=(
+            f"{FRONTEND_URL}/api/checkout/confirm?site_id={body.site_id}"
+            "&session_id={CHECKOUT_SESSION_ID}"
+        ),
         cancel_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}",
         customer_email=get_report_email(body.site_id),
         metadata={"site_id": body.site_id},
         allow_promotion_codes=True,
     )
+    return {"url": session.url}
+
+
+@app.post("/api/billing/portal")
+def create_billing_portal(body: PortalRequest):
+    if not BILLING_ENABLED:
+        raise HTTPException(status_code=503, detail="Billing is not configured")
+    try:
+        uuid.UUID(body.site_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Report not found") from exc
+
+    customer = get_billing_customer(body.site_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="No subscription was found for this report")
+    try:
+        checkout_session = stripe.checkout.Session.retrieve(body.checkout_session_id)
+        session_metadata = stripe_attribute(checkout_session, "metadata", {})
+        session_site_id = stripe_attribute(session_metadata, "site_id")
+        session_customer = stripe_identifier(
+            stripe_attribute(checkout_session, "customer")
+        )
+        payment_status = stripe_attribute(checkout_session, "payment_status")
+        if (
+            session_site_id != body.site_id
+            or session_customer != customer
+            or payment_status not in {"paid", "no_payment_required"}
+        ):
+            raise HTTPException(status_code=403, detail="Billing access could not be verified")
+        session = stripe.billing_portal.Session.create(
+            customer=customer,
+            return_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}",
+        )
+    except HTTPException:
+        raise
+    except stripe.error.StripeError as exc:
+        raise HTTPException(status_code=502, detail="Billing portal is unavailable") from exc
     return {"url": session.url}
 
 
@@ -901,13 +1167,73 @@ def confirm_checkout(session_id: str, site_id: str):
     if payment_status in ("paid", "no_payment_required") and meta_site_id == site_id:
         customer = getattr(session, "customer", None)
         subscription = getattr(session, "subscription", None)
-        unlock_report(
+        set_report_subscription(
             site_id,
             customer if isinstance(customer, str) else getattr(customer, "id", None),
             subscription if isinstance(subscription, str) else getattr(subscription, "id", None),
+            "active",
         )
         return {"unlocked": True}
     return {"unlocked": False}
+
+
+def stripe_attribute(value, name: str, default=None):
+    if isinstance(value, dict):
+        return value.get(name, default)
+    return getattr(value, name, default)
+
+
+def stripe_identifier(value) -> Optional[str]:
+    if isinstance(value, str):
+        return value
+    identifier = stripe_attribute(value, "id")
+    return identifier if isinstance(identifier, str) else None
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(
+    http_request: Request,
+    stripe_signature: Optional[str] = Header(default=None, alias="stripe-signature"),
+):
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=503, detail="Stripe webhook is not configured")
+    if not stripe_signature:
+        raise HTTPException(status_code=400, detail="Missing Stripe signature")
+
+    payload = await http_request.body()
+    try:
+        event = stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=stripe_signature,
+            secret=STRIPE_WEBHOOK_SECRET,
+        )
+    except (ValueError, stripe.error.SignatureVerificationError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid Stripe webhook") from exc
+
+    event_type = stripe_attribute(event, "type", "")
+    event_data = stripe_attribute(event, "data", {})
+    stripe_object = stripe_attribute(event_data, "object", {})
+
+    if event_type in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
+        metadata = stripe_attribute(stripe_object, "metadata", {})
+        site_id = stripe_attribute(metadata, "site_id")
+        payment_status = stripe_attribute(stripe_object, "payment_status")
+        if site_id and payment_status in {"paid", "no_payment_required"}:
+            customer = stripe_attribute(stripe_object, "customer")
+            subscription = stripe_attribute(stripe_object, "subscription")
+            set_report_subscription(
+                site_id,
+                stripe_identifier(customer),
+                stripe_identifier(subscription),
+                "active",
+            )
+    elif event_type in {"customer.subscription.updated", "customer.subscription.deleted"}:
+        subscription = stripe_attribute(stripe_object, "id")
+        status = stripe_attribute(stripe_object, "status", "canceled")
+        if subscription:
+            set_subscription_status_by_id(subscription, status)
+
+    return {"received": True}
 
 
 @app.get("/api/dashboard/{site_id}", response_model=DashboardData)

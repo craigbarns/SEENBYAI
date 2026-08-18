@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 import { Analytics } from "@/components/analytics";
+import { SiteFooter } from "@/components/site-footer";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
     template: "%s | GetInTheAnswer",
   },
   description:
-    "Check if AI engines like ChatGPT, Claude and Perplexity recommend your local business. Get your free AI visibility score, competitor benchmark and prioritized action plan in minutes.",
+    "Check if AI engines like ChatGPT, Claude, Gemini and Perplexity recommend your local business. Get your free AI visibility score, competitor benchmark and prioritized action plan in minutes.",
   keywords: [
     "AI visibility",
     "AI SEO",
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "GetInTheAnswer — Is your business visible in AI answers?",
     description:
-      "Measure your visibility in ChatGPT, Claude and Perplexity in minutes. Free AI visibility score, no credit card required.",
+      "Measure your visibility in ChatGPT, Claude, Gemini and Perplexity in minutes. Free AI visibility score, no credit card required.",
     url: SITE_URL,
     siteName: SITE_NAME,
     locale: "en_US",
@@ -50,7 +51,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GetInTheAnswer — Is your business visible in AI answers?",
     description:
-      "Measure your visibility in ChatGPT, Claude and Perplexity in minutes. Free AI visibility score, no credit card required.",
+      "Measure your visibility in ChatGPT, Claude, Gemini and Perplexity in minutes. Free AI visibility score, no credit card required.",
   },
   ...(process.env.GOOGLE_SITE_VERIFICATION
     ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
@@ -74,6 +75,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         {children}
+        <SiteFooter />
         <Analytics />
       </body>
     </html>

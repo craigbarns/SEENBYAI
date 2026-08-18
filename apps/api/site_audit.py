@@ -4,13 +4,17 @@ Two tiers: a plain HTTP fetch first (free, no dependency), then Firecrawl for
 sites the plain fetch can't read (JS-rendered pages, bot protection).
 """
 
+import asyncio
+import ipaddress
 import json
 import os
 import re
+import socket
 from typing import List, Optional
+from urllib.parse import urljoin, urlsplit
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "").strip()
 FIRECRAWL_ENDPOINT = "https://api.firecrawl.dev/v2/scrape"
@@ -20,6 +24,9 @@ BROWSER_USER_AGENT = (
 )
 # Below this, a page is almost certainly a JS shell rather than real content.
 MIN_USEFUL_TEXT = 600
+MAX_RESPONSE_BYTES = 2_000_000
+MAX_REDIRECTS = 5
+ALLOWED_PORTS = {80, 443}
 
 LOCAL_BUSINESS_TYPES = {
     "localbusiness", "restaurant", "store", "plumber", "electrician", "dentist",
@@ -42,8 +49,61 @@ class SiteAudit(BaseModel):
     url: str
     fetched: bool
     source: str = "none"  # "http" | "firecrawl" | "none"
-    checks: List[SiteCheck] = []
+    checks: List[SiteCheck] = Field(default_factory=list)
     content_digest: Optional[str] = None
+
+
+class UnsafeWebsiteUrl(ValueError):
+    """Raised when a submitted website could reach a private network target."""
+
+
+def validate_url_structure(url: str) -> tuple[str, int]:
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise UnsafeWebsiteUrl("Only public http and https websites can be analyzed.")
+    if parsed.username or parsed.password:
+        raise UnsafeWebsiteUrl("Website addresses containing credentials are not supported.")
+
+    try:
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError as exc:
+        raise UnsafeWebsiteUrl("The website port is invalid.") from exc
+    if port not in ALLOWED_PORTS:
+        raise UnsafeWebsiteUrl("Only standard website ports (80 and 443) can be analyzed.")
+
+    hostname = parsed.hostname.rstrip(".").lower()
+    if (
+        hostname == "localhost"
+        or hostname.endswith((".localhost", ".local", ".internal"))
+    ):
+        raise UnsafeWebsiteUrl("Private or local network addresses cannot be analyzed.")
+    return hostname, port
+
+
+async def validate_public_http_url(url: str) -> None:
+    """Resolve a URL and reject every private, loopback or reserved address."""
+
+    hostname, port = validate_url_structure(url)
+    try:
+        literal_ip = ipaddress.ip_address(hostname)
+        addresses = {literal_ip}
+    except ValueError:
+        try:
+            resolved = await asyncio.to_thread(
+                socket.getaddrinfo,
+                hostname,
+                port,
+                type=socket.SOCK_STREAM,
+            )
+        except OSError as exc:
+            raise UnsafeWebsiteUrl("The website hostname could not be resolved.") from exc
+        addresses = {
+            ipaddress.ip_address(address[4][0].split("%", 1)[0])
+            for address in resolved
+        }
+
+    if not addresses or any(not address.is_global for address in addresses):
+        raise UnsafeWebsiteUrl("Private or local network addresses cannot be analyzed.")
 
 
 def strip_html(html: str) -> str:
@@ -86,13 +146,38 @@ def schema_types(blocks: List[dict]) -> set:
 async def fetch_via_http(url: str) -> Optional[str]:
     try:
         async with httpx.AsyncClient(
-            follow_redirects=True, timeout=20, headers={"User-Agent": BROWSER_USER_AGENT}
+            follow_redirects=False,
+            timeout=20,
+            headers={"User-Agent": BROWSER_USER_AGENT},
         ) as client:
-            response = await client.get(url)
-            if response.status_code >= 400:
-                return None
-            return response.text
-    except Exception:
+            current_url = url
+            for _ in range(MAX_REDIRECTS + 1):
+                # Validate every redirect target, not just the user-supplied URL.
+                await validate_public_http_url(current_url)
+                async with client.stream("GET", current_url) as response:
+                    if response.is_redirect:
+                        location = response.headers.get("location")
+                        if not location:
+                            return None
+                        current_url = urljoin(current_url, location)
+                        continue
+                    if response.status_code >= 400:
+                        return None
+                    content_type = response.headers.get("content-type", "").lower()
+                    if content_type and not any(
+                        allowed in content_type
+                        for allowed in ("text/html", "application/xhtml+xml", "text/plain")
+                    ):
+                        return None
+
+                    content = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        content.extend(chunk)
+                        if len(content) > MAX_RESPONSE_BYTES:
+                            return None
+                    return bytes(content).decode(response.encoding or "utf-8", errors="replace")
+            return None
+    except (httpx.HTTPError, UnicodeError, UnsafeWebsiteUrl):
         return None
 
 

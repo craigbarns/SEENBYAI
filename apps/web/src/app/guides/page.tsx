@@ -38,7 +38,7 @@ export default function GuidesPage() {
           <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-700">Guides</p>
           <h1 className="mt-4 text-balance text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl">Get found by AI engines.</h1>
           <p className="mt-5 text-lg leading-8 text-muted-foreground">
-            Practical, no-fluff guides on generative engine optimization for local businesses — how ChatGPT, Claude and Perplexity pick who to recommend, and how to become that recommendation.
+            Practical, no-fluff guides on generative engine optimization for local businesses — how ChatGPT, Claude, Gemini and Perplexity pick who to recommend, and how to become that recommendation.
           </p>
         </div>
 

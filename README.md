@@ -29,17 +29,17 @@ SeenByAI est une application SaaS B2B destinée aux PME locales pour mesurer et 
 
 - [x] Initialisation du projet (Next.js, FastAPI, Docker Compose)
 - [x] Configuration UI (Tailwind, shadcn/ui)
-- [ ] Modélisation de la base de données (Supabase Migrations)
-- [ ] Implémentation du backend (API)
+- [x] Modélisation de la base de données et persistance des rapports
+- [x] Implémentation du backend (API)
 - [ ] Intégration Supabase Auth
-- [ ] Onboarding (Génération des requêtes)
-- [ ] Scan Engine (Adapters & Mock mode)
-- [ ] Scoring Engine
-- [ ] Détection des concurrents
-- [ ] Moteur de Recommandations
-- [ ] UI Landing Page
-- [ ] UI Dashboard (Score, Mentions, Concurrents, Actions)
-- [ ] Intégration Stripe Checkout
+- [x] Onboarding (génération des questions)
+- [x] Scan Engine (ChatGPT, Claude, Perplexity et mode simulation)
+- [x] Scoring Engine
+- [x] Détection des concurrents
+- [x] Moteur de recommandations
+- [x] UI Landing Page
+- [x] UI Dashboard (score, mentions, concurrents, actions)
+- [x] Stripe Checkout, webhook et portail d'abonnement
 - [ ] Weekly Report (Mock/Stub)
 
 ## Lancement local
@@ -61,4 +61,41 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload
+```
+
+## Configuration de production
+
+Variables principales de l'API :
+
+- `DATABASE_URL` : PostgreSQL persistant.
+- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY` : moteurs du scan live.
+- `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` : abonnement Pro.
+- `STRIPE_WEBHOOK_SECRET` : signature du webhook Stripe.
+- `FRONTEND_URL` : URL canonique du frontend.
+- `SCAN_RATE_LIMIT` : scans gratuits autorisés par IP, email et domaine sur la fenêtre (3 par défaut).
+- `SCAN_RATE_WINDOW_SECONDS` : fenêtre de limitation (24 heures par défaut).
+- `MAX_CONCURRENT_SCANS` : scans exécutés simultanément par instance API (3 par défaut).
+
+Le webhook Stripe doit pointer vers :
+
+```text
+https://www.getintheanswer.com/api/stripe/webhook
+```
+
+Événements attendus :
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+## Vérifications
+
+```bash
+cd apps/web
+npm run lint
+npx next build --webpack
+
+cd ../..
+python3 -m unittest discover -s tests -v
 ```

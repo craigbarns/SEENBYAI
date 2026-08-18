@@ -24,12 +24,13 @@ import {
 } from "lucide-react";
 
 import { LogoMark } from "@/components/logo";
+import { ManageSubscriptionButton } from "@/components/manage-subscription-button";
 import { UnlockButton } from "@/components/unlock-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { confirmCheckout, getDashboardData, type Priority } from "@/lib/seenbyai";
+import { getDashboardData, type Priority } from "@/lib/seenbyai";
 
 const PLAN_PRICE = "$29/mo";
 
@@ -50,6 +51,7 @@ export const metadata: Metadata = {
 const engineColors: Record<string, string> = {
   ChatGPT: "bg-emerald-500",
   Perplexity: "bg-lime-500",
+  Gemini: "bg-sky-500",
   Claude: "bg-amber-400",
 };
 
@@ -85,7 +87,9 @@ export default async function DashboardPage({
   if (!siteId) redirect("/onboarding");
 
   if (sessionId) {
-    await confirmCheckout(siteId, sessionId);
+    redirect(
+      `/api/checkout/confirm?site_id=${encodeURIComponent(siteId)}&session_id=${encodeURIComponent(sessionId)}`,
+    );
   }
 
   const data = await getDashboardData(siteId);
@@ -115,6 +119,7 @@ export default async function DashboardPage({
   const competitorGap = data.top_competitor_mentions - data.brand_mentions;
   const scoreSummary = getScoreSummary(safeScore);
   const engineNames = Array.from(new Set(data.queries.map((query) => query.engine)));
+  const uniqueQuestionCount = new Set(data.queries.map((query) => query.query)).size;
   const engineStats = engineNames.map((engine) => {
     const queries = data.queries.filter((query) => query.engine === engine);
     const mentions = queries.filter((query) => query.brand_mentioned).length;
@@ -143,6 +148,9 @@ export default async function DashboardPage({
           <Button asChild variant="ghost" size="sm" className="ml-2 hidden rounded-full sm:inline-flex">
             <Link href="/onboarding"><RotateCcw className="mr-2 size-4" aria-hidden="true" /> New scan</Link>
           </Button>
+          {data.has_subscription && (
+            <ManageSubscriptionButton siteId={data.site_id} className="ml-1 hidden rounded-full lg:inline-flex" />
+          )}
         </div>
       </header>
 
@@ -166,8 +174,8 @@ export default async function DashboardPage({
               <h1 className="mt-5 text-balance text-3xl font-extrabold tracking-[-0.045em] sm:text-5xl">Here&apos;s how AI engines see {data.company_name}.</h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/65 sm:text-lg">
                 {data.mode === "live"
-                  ? `Report based on ${data.total_queries} real local searches asked to AI engines.`
-                  : `Report based on ${data.total_queries} simulated local searches across ChatGPT, Claude and Perplexity.`}
+                  ? `${uniqueQuestionCount} customer questions tested across ${engineNames.length} AI engines, for ${data.total_queries} answer checks.`
+                  : `${uniqueQuestionCount} customer questions simulated across ${engineNames.length} AI engines, for ${data.total_queries} answer checks.`}
               </p>
               <a className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-lime-300 hover:text-lime-200" href={data.website_url} target="_blank" rel="noreferrer">
                 {data.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
@@ -198,10 +206,16 @@ export default async function DashboardPage({
               </span>
               <div>
                 <h2 className="text-xl font-extrabold tracking-[-0.03em]">This is a preview of your report</h2>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">Unlock every competitor name, all {data.total_queries} queries and your full action plan. Cancel anytime.</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">Unlock every competitor name, all {data.total_queries} answer checks and your full action plan. Cancel anytime.</p>
               </div>
             </div>
-            <UnlockButton siteId={data.site_id} className="h-12 shrink-0 rounded-full px-6 font-extrabold">Unlock full report — {PLAN_PRICE}</UnlockButton>
+            <div className="shrink-0 text-center">
+              <UnlockButton siteId={data.site_id} className="h-12 rounded-full px-6 font-extrabold">Unlock full report — {PLAN_PRICE}</UnlockButton>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Professional subscription. By continuing, you accept the{" "}
+                <Link className="font-bold underline" href="/terms">terms</Link>.
+              </p>
+            </div>
           </section>
         )}
 
@@ -235,11 +249,11 @@ export default async function DashboardPage({
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {data.brand_mentions > 0 ? (
-                <div className="rounded-2xl bg-emerald-50 p-4"><div className="flex items-center gap-2 font-extrabold text-emerald-800"><CheckCircle2 className="size-4" aria-hidden="true" /> Positive signal</div><p className="mt-2 text-sm leading-6 text-emerald-900/70">Your brand is already recognized on {data.brand_mentions} relevant queries.</p></div>
+                <div className="rounded-2xl bg-emerald-50 p-4"><div className="flex items-center gap-2 font-extrabold text-emerald-800"><CheckCircle2 className="size-4" aria-hidden="true" /> Positive signal</div><p className="mt-2 text-sm leading-6 text-emerald-900/70">Your brand is already recognized in {data.brand_mentions} AI answers.</p></div>
               ) : (
                 <div className="rounded-2xl bg-slate-100 p-4"><div className="flex items-center gap-2 font-extrabold text-slate-700"><CircleAlert className="size-4" aria-hidden="true" /> No mentions yet</div><p className="mt-2 text-sm leading-6 text-slate-600">AI engines never cited your brand in this scan. The action plan below is designed to change that.</p></div>
               )}
-              <div className="rounded-2xl bg-amber-50 p-4"><div className="flex items-center gap-2 font-extrabold text-amber-800"><AlertTriangle className="size-4" aria-hidden="true" /> Opportunity</div><p className="mt-2 text-sm leading-6 text-amber-900/70">{Math.max(0, data.total_queries - data.brand_mentions)} queries don&apos;t mention your business yet.</p></div>
+              <div className="rounded-2xl bg-amber-50 p-4"><div className="flex items-center gap-2 font-extrabold text-amber-800"><AlertTriangle className="size-4" aria-hidden="true" /> Opportunity</div><p className="mt-2 text-sm leading-6 text-amber-900/70">{Math.max(0, data.total_queries - data.brand_mentions)} AI answers don&apos;t mention your business yet.</p></div>
             </div>
           </div>
         </section>
@@ -340,11 +354,11 @@ export default async function DashboardPage({
         </section>
 
         <section className="pt-4">
-          <div><p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Scan data</p><h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">{data.mode === "live" ? "Scan details" : "Simulation details"}</h2><p className="mt-2 text-muted-foreground">The queries used to calculate your score.</p></div>
+          <div><p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Scan data</p><h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">{data.mode === "live" ? "Scan details" : "Simulation details"}</h2><p className="mt-2 text-muted-foreground">Every question-and-engine check used to calculate your score.</p></div>
           <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-foreground/8 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <Table className="min-w-[900px]">
-                <TableHeader className="bg-[#f3f4ed]"><TableRow className="hover:bg-transparent"><TableHead className="w-[420px] px-6 py-4 font-extrabold text-foreground">Query tested</TableHead><TableHead className="font-extrabold text-foreground">Engine</TableHead><TableHead className="text-center font-extrabold text-foreground">Mention</TableHead><TableHead className="pr-6 font-extrabold text-foreground">Recommended instead</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-[#f3f4ed]"><TableRow className="hover:bg-transparent"><TableHead className="w-[420px] px-6 py-4 font-extrabold text-foreground">Question tested</TableHead><TableHead className="font-extrabold text-foreground">Engine</TableHead><TableHead className="text-center font-extrabold text-foreground">Mention</TableHead><TableHead className="pr-6 font-extrabold text-foreground">Recommended instead</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {(data.unlocked ? data.queries : data.queries.slice(0, 3)).map((query, index) => (
                     <TableRow className="hover:bg-[#f8f8f3]" key={`${query.engine}-${query.query}-${index}`}>
@@ -371,7 +385,7 @@ export default async function DashboardPage({
                     <TableRow className="hover:bg-transparent">
                       <TableCell colSpan={4} className="p-0">
                         <div className="flex flex-col items-center justify-center gap-3 bg-[#f8f8f3] px-6 py-8 sm:flex-row sm:gap-5">
-                          <span className="flex items-center gap-2 font-bold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden="true" /> {data.queries.length - 3} more queries — plus what each AI actually said — are hidden in the preview</span>
+                          <span className="flex items-center gap-2 font-bold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden="true" /> {data.queries.length - 3} more answer checks — plus what each AI actually said — are hidden in the preview</span>
                           <UnlockButton siteId={data.site_id} size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
                         </div>
                       </TableCell>
@@ -382,6 +396,16 @@ export default async function DashboardPage({
             </div>
           </div>
         </section>
+
+        {data.has_subscription && (
+          <section className="flex flex-col items-start justify-between gap-4 rounded-[1.5rem] border border-foreground/8 bg-white p-6 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="font-extrabold tracking-[-0.02em]">Your Pro subscription</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Update your payment method, view invoices or cancel from Stripe&apos;s secure portal.</p>
+            </div>
+            <ManageSubscriptionButton siteId={data.site_id} className="shrink-0 rounded-full border border-foreground/10 bg-[#f8f8f3] px-5" />
+          </section>
+        )}
 
         <section className="flex flex-col items-start justify-between gap-5 rounded-[1.75rem] bg-lime-200 p-6 sm:flex-row sm:items-center sm:p-8">
           <div><h2 className="text-2xl font-extrabold tracking-[-0.035em]">Want to measure another business?</h2><p className="mt-1 text-sm text-primary/70">Create a new report in minutes.</p></div>

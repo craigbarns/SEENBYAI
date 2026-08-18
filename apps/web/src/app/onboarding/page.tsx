@@ -75,6 +75,7 @@ export default function OnboardingPage() {
       return;
     }
 
+    window.scrollTo({ top: 0 });
     setLoading(true);
     window.gtag?.("event", "scan_started", { city: formData.city, industry: formData.industry });
 
@@ -127,8 +128,8 @@ export default function OnboardingPage() {
 
         <div className="relative grid gap-3">
           {[
-            "20 simulated customer questions",
-            "ChatGPT, Claude and Perplexity compared",
+            "10 tailored customer questions",
+            "Up to 40 checks across 4 AI engines",
             "Recommendations ranked by impact",
           ].map((benefit) => (
             <div className="flex items-center gap-3 text-sm font-semibold text-white/80" key={benefit}>
@@ -158,23 +159,48 @@ export default function OnboardingPage() {
 
         <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
           <div className="w-full max-w-2xl animate-fade-in">
-            <div className="mb-8 flex items-center gap-3" aria-label="Step 1 of 2">
+            <div className="mb-8 flex items-center gap-3" aria-label={`Step ${loading ? 2 : 1} of 2`}>
               <span className="h-1.5 flex-1 rounded-full bg-primary" />
-              <span className="h-1.5 flex-1 rounded-full bg-foreground/10" />
-              <span className="ml-2 text-xs font-extrabold uppercase tracking-[0.12em] text-muted-foreground">1 / 2</span>
+              <span className={`h-1.5 flex-1 rounded-full ${loading ? "bg-primary" : "bg-foreground/10"}`} />
+              <span className="ml-2 text-xs font-extrabold uppercase tracking-[0.12em] text-muted-foreground">{loading ? "2 / 2" : "1 / 2"}</span>
             </div>
 
             <div className="flex items-start gap-4">
               <span className="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-lime-200 text-primary sm:flex">
-                <ScanSearch className="size-6" aria-hidden="true" />
+                {loading ? <Loader2 className="size-6 animate-spin" aria-hidden="true" /> : <ScanSearch className="size-6" aria-hidden="true" />}
               </span>
               <div>
-                <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-emerald-700">Business profile</p>
-                <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">Let&apos;s calibrate your analysis.</h2>
-                <p className="mt-2 text-base leading-7 text-muted-foreground">Tell us about your core market. You&apos;ll be able to refine the queries in the report.</p>
+                <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-emerald-700">{loading ? "Live analysis" : "Business profile"}</p>
+                <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">{loading ? "We're checking the answers." : "Let's calibrate your analysis."}</h2>
+                <p className="mt-2 text-base leading-7 text-muted-foreground">
+                  {loading
+                    ? "Keep this tab open while we test your market and audit your website."
+                    : "Tell us about your core market so every question is relevant to your business."}
+                </p>
               </div>
             </div>
 
+            {loading ? (
+              <div className="mt-8 rounded-[1.5rem] border border-foreground/8 bg-white p-6 shadow-sm sm:p-8" role="status" aria-live="polite">
+                <div className="flex items-center gap-4">
+                  <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                    <Loader2 className="size-6 animate-spin" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h3 className="font-extrabold">Running your personalized scan</h3>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">Most reports are ready in one to two minutes.</p>
+                  </div>
+                </div>
+                <div className="mt-6 grid gap-3 text-sm font-semibold text-muted-foreground">
+                  {["Generating local customer questions", "Comparing answers across available AI engines", "Auditing your website and ranking next actions"].map((step) => (
+                    <span className="flex items-center gap-3 rounded-xl bg-[#f8f8f3] px-4 py-3" key={step}>
+                      <Sparkles className="size-4 shrink-0 text-emerald-700" aria-hidden="true" />
+                      {step}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="companyName" className="text-sm font-bold">Business name</Label>
@@ -203,7 +229,7 @@ export default function OnboardingPage() {
                   aria-describedby="email-help"
                   className="h-12 rounded-xl border-foreground/10 bg-white px-4 shadow-sm focus-visible:border-primary"
                 />
-                <p id="email-help" className="text-xs text-muted-foreground">Your report link stays tied to this email.</p>
+                <p id="email-help" className="text-xs text-muted-foreground">Used to associate this scan with your report and checkout if you upgrade.</p>
               </div>
 
               <div className="space-y-2">
@@ -269,19 +295,19 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              <Button className="h-14 w-full rounded-xl text-base font-extrabold shadow-lg shadow-primary/12" type="submit" disabled={loading}>
-                {loading ? (
-                  <><Loader2 className="mr-2 size-5 animate-spin" aria-hidden="true" /> Scanning AI engines… this can take up to a minute</>
-                ) : (
-                  <>Start my free analysis <ArrowRight className="ml-2 size-5" aria-hidden="true" /></>
-                )}
+              <Button className="h-14 w-full rounded-xl text-base font-extrabold shadow-lg shadow-primary/12" type="submit">
+                Start my free analysis <ArrowRight className="ml-2 size-5" aria-hidden="true" />
               </Button>
 
               <p className="flex items-center justify-center gap-2 text-center text-xs leading-5 text-muted-foreground">
                 <Sparkles className="size-3.5 shrink-0 text-emerald-700" aria-hidden="true" />
-                Your information is only used to personalize this simulation.
+                <span>
+                  We use these details to run and store your report. We do not sell your data.{" "}
+                  <Link className="font-bold text-emerald-700 underline" href="/privacy">Privacy details</Link>
+                </span>
               </p>
             </form>
+            )}
           </div>
         </div>
       </section>
