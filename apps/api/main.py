@@ -18,6 +18,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "").strip()
+PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "").strip()
@@ -370,10 +372,10 @@ async def generate_queries_llm(client, request: OnboardingRequest) -> Optional[L
         return None
 
 
-async def ask_engine(client, query: str) -> Optional[str]:
+async def ask_engine(client, query: str, model: str = OPENAI_MODEL) -> Optional[str]:
     try:
         response = await client.chat.completions.create(
-            model=OPENAI_MODEL,
+            model=model,
             messages=[
                 {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
                 {"role": "user", "content": query},
@@ -436,11 +438,21 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         from anthropic import AsyncAnthropic
 
         engines.append(("Claude", "anthropic", AsyncAnthropic(api_key=ANTHROPIC_API_KEY)))
+    if PERPLEXITY_API_KEY:
+        engines.append(
+            (
+                "Perplexity",
+                "perplexity",
+                AsyncOpenAI(api_key=PERPLEXITY_API_KEY, base_url="https://api.perplexity.ai"),
+            )
+        )
 
     async def guarded_ask(kind: str, engine_client, query: str) -> Optional[str]:
         async with semaphore:
             if kind == "anthropic":
                 return await ask_claude(engine_client, query)
+            if kind == "perplexity":
+                return await ask_engine(engine_client, query, model=PERPLEXITY_MODEL)
             return await ask_engine(engine_client, query)
 
     labels: list[tuple[str, str]] = []
