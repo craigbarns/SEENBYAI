@@ -244,6 +244,46 @@ export default async function DashboardPage({
           </div>
         </section>
 
+        {data.site_audit?.fetched && data.site_audit.checks.length > 0 && (
+          <section className="rounded-[1.75rem] border border-foreground/8 bg-white p-6 shadow-sm sm:p-7">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-emerald-700">Website audit</p>
+                <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.035em] sm:text-3xl">Your site vs what AI engines need</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">We fetched your homepage and checked the signals engines use to verify and recommend a business.</p>
+              </div>
+              <Badge variant="outline" className="w-fit bg-white px-3 py-1.5">
+                {data.site_audit.checks.filter((check) => check.passed).length}/{data.site_audit.checks.length} signals present
+              </Badge>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {(data.unlocked ? data.site_audit.checks : data.site_audit.checks.slice(0, 2)).map((check) => (
+                <div
+                  className={`flex items-start gap-3 rounded-2xl border p-4 ${check.passed ? "border-emerald-200 bg-emerald-50/60" : "border-amber-200 bg-amber-50/60"}`}
+                  key={check.key}
+                >
+                  <span className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full ${check.passed ? "bg-emerald-600 text-white" : "bg-amber-500 text-white"}`}>
+                    {check.passed ? <Check className="size-3.5" aria-hidden="true" /> : <AlertTriangle className="size-3.5" aria-hidden="true" />}
+                  </span>
+                  <div>
+                    <p className="font-extrabold leading-6">{check.label}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{check.detail}</p>
+                  </div>
+                </div>
+              ))}
+              {!data.unlocked && data.site_audit.checks.length > 2 && (
+                <div className="flex flex-col items-start justify-center gap-3 rounded-2xl border border-dashed border-foreground/15 bg-white/60 p-4 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="flex items-center gap-2 font-bold text-muted-foreground">
+                    <LockKeyhole className="size-4" aria-hidden="true" /> {data.site_audit.checks.length - 2} more website checks are hidden in the preview
+                  </span>
+                  <UnlockButton siteId={data.site_id} size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {data.unlocked && data.history.length > 1 && (
           <section className="rounded-[1.75rem] border border-foreground/8 bg-white p-6 shadow-sm sm:p-7">
             <div className="flex items-start justify-between gap-4">

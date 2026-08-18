@@ -34,6 +34,21 @@ export interface DashboardData {
   mode: "live" | "simulation";
   unlocked: boolean;
   history: ScorePoint[];
+  site_audit?: SiteAudit | null;
+}
+
+export interface SiteCheck {
+  key: string;
+  label: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface SiteAudit {
+  url: string;
+  fetched: boolean;
+  source: "http" | "firecrawl" | "none";
+  checks: SiteCheck[];
 }
 
 export interface ScorePoint {

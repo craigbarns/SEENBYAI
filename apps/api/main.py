@@ -14,6 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AnyHttpUrl, BaseModel, Field
 from sqlalchemy import create_engine, text
 
+from site_audit import SiteAudit, audit_site
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
@@ -136,6 +138,7 @@ class DashboardData(BaseModel):
     mode: str = "simulation"
     unlocked: bool = True
     history: List[ScorePoint] = []
+    site_audit: Optional[SiteAudit] = None
 
 
 # In-memory fallback when no database is configured (local development).
@@ -455,6 +458,7 @@ async def generate_recommendations_llm(
     request: OnboardingRequest,
     results: List[QueryResult],
     top_competitors: List[tuple],
+    site: Optional[SiteAudit] = None,
 ) -> Optional[List[Recommendation]]:
     digest_lines = []
     for result in results:
@@ -473,12 +477,25 @@ async def generate_recommendations_llm(
         f"Services: {(request.services or request.industry).strip()}\n"
         f"Visibility: mentioned in {mentions}/{len(results)} answers | Top competitors: {competitors_summary}"
     )
+    site_section = ""
+    if site is not None and site.fetched and site.content_digest:
+        site_section = (
+            "\n\n--- AUDIT OF THE BUSINESS'S OWN WEBSITE (facts verified by fetching the page) ---\n\n"
+            f"{site.content_digest}\n\n"
+            "Ground your recommendations in these verified findings: never tell the owner to add something "
+            "the audit shows they already have, and prioritize the checks that failed."
+        )
     try:
         response = await client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": RECOMMENDATION_SYSTEM_PROMPT},
-                {"role": "user", "content": f"{profile}\n\n--- REAL AI ANSWERS ---\n\n" + "\n\n".join(digest_lines)},
+                {
+                    "role": "user",
+                    "content": f"{profile}\n\n--- REAL AI ANSWERS ---\n\n"
+                    + "\n\n".join(digest_lines)
+                    + site_section,
+                },
             ],
             response_format={"type": "json_object"},
             max_tokens=1200,
@@ -510,6 +527,15 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    # The website audit runs alongside query generation — it never blocks the scan.
+    site_task = asyncio.create_task(
+        audit_site(
+            str(request.websiteUrl),
+            request.city.strip(),
+            request.industry.strip(),
+            request.services or request.industry,
+        )
+    )
     queries = await generate_queries_llm(client, request) or build_queries(request)
     semaphore = asyncio.Semaphore(6)
 
@@ -601,8 +627,13 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
     else:
         top_competitor, top_competitor_mentions = "No competitor detected", 0
 
+    try:
+        site = await site_task
+    except Exception:
+        site = None
+
     recommendations = await generate_recommendations_llm(
-        client, request, results, competitor_mentions.most_common(5)
+        client, request, results, competitor_mentions.most_common(5), site
     ) or build_recommendations(request)
 
     return DashboardData(
@@ -620,6 +651,7 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         queries=results,
         recommendations=recommendations,
         mode="live",
+        site_audit=site,
     )
 
 
