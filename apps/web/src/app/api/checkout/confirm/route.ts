@@ -6,16 +6,28 @@ function billingCookieName(siteId: string) {
   return `seenbyai_billing_${siteId.replace(/[^a-zA-Z0-9-]/g, "")}`;
 }
 
+/**
+ * Redirect using a relative Location header.
+ *
+ * `new URL(path, request.url)` cannot be used here: behind Railway's proxy
+ * `request.url` is the container-internal origin (localhost:8080), so an
+ * absolute redirect sends the customer to a dead host right after paying.
+ * A relative Location is resolved by the browser against the public URL it
+ * actually requested, which is correct in every environment.
+ */
+function redirectTo(path: string) {
+  return new NextResponse(null, { status: 303, headers: { Location: path } });
+}
+
 export async function GET(request: NextRequest) {
   const siteId = request.nextUrl.searchParams.get("site_id");
   const sessionId = request.nextUrl.searchParams.get("session_id");
-  const dashboardUrl = new URL("/dashboard", request.url);
 
   if (!siteId || !sessionId) {
-    return NextResponse.redirect(new URL("/onboarding", request.url), 303);
+    return redirectTo("/onboarding");
   }
 
-  dashboardUrl.searchParams.set("site_id", siteId);
+  const dashboardPath = `/dashboard?site_id=${encodeURIComponent(siteId)}`;
 
   try {
     const confirmationUrl = new URL("/api/checkout/confirm", API_BASE_URL);
@@ -25,11 +37,10 @@ export async function GET(request: NextRequest) {
     const data = (await confirmation.json().catch(() => null)) as { unlocked?: boolean } | null;
 
     if (!confirmation.ok || !data?.unlocked) {
-      dashboardUrl.searchParams.set("billing_error", "confirmation");
-      return NextResponse.redirect(dashboardUrl, 303);
+      return redirectTo(`${dashboardPath}&billing_error=confirmation`);
     }
 
-    const response = NextResponse.redirect(dashboardUrl, 303);
+    const response = redirectTo(dashboardPath);
     response.cookies.set({
       name: billingCookieName(siteId),
       value: sessionId,
@@ -41,7 +52,6 @@ export async function GET(request: NextRequest) {
     });
     return response;
   } catch {
-    dashboardUrl.searchParams.set("billing_error", "confirmation");
-    return NextResponse.redirect(dashboardUrl, 303);
+    return redirectTo(`${dashboardPath}&billing_error=confirmation`);
   }
 }
