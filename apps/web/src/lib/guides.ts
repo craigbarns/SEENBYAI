@@ -61,7 +61,7 @@ export const guides: Guide[] = [
         heading: "Step 4 — Measure, then iterate",
         paragraphs: [
           "You can't improve what you don't measure. Run the questions your customers ask through the major AI engines and record whether you're mentioned, who is mentioned instead, and how the answers change over time. Do it weekly — AI answers shift as models and their search indexes update.",
-          "That's precisely what LLM Rank automates: it asks the real questions your local customers ask, in their language, measures your mentions against competitors, and turns the gaps into a prioritized action plan.",
+          "That's precisely what GetInTheAnswer automates: it asks the real questions your local customers ask, in their language, measures your mentions against competitors, and turns the gaps into a prioritized action plan.",
         ],
       },
     ],
@@ -106,7 +106,7 @@ export const guides: Guide[] = [
         heading: "How to measure GEO",
         paragraphs: [
           "GEO starts with a visibility audit: take the 10–20 questions your customers actually ask, run them through the major AI engines, and score how often you're named versus your competitors. Track it weekly — answers move as models update.",
-          "LLM Rank runs this exact audit in minutes and gives you a 0–100 visibility score, the competitors dominating your queries, and a prioritized plan to close the gap.",
+          "GetInTheAnswer runs this exact audit in minutes and gives you a 0–100 visibility score, the competitors dominating your queries, and a prioritized plan to close the gap.",
         ],
       },
     ],
@@ -153,7 +153,7 @@ export const guides: Guide[] = [
         heading: "5. Measure weekly, fix what's broken",
         paragraphs: [
           "Pick the questions that matter for your revenue, run them through ChatGPT, Claude and Perplexity, and score yourself against the competitors the engines actually name. Repeat weekly and watch the trend — that's your AI visibility, measured where customers really are.",
-          "LLM Rank automates this loop: real queries in your customers' language, a 0–100 score, named competitors, and a prioritized action plan updated with weekly re-scans.",
+          "GetInTheAnswer automates this loop: real queries in your customers' language, a 0–100 score, named competitors, and a prioritized action plan updated with weekly re-scans.",
         ],
       },
     ],
@@ -200,7 +200,7 @@ export const guides: Guide[] = [
         heading: "Does it actually move your AI visibility?",
         paragraphs: [
           "Structured data alone won't make an AI recommend you — reputation and content do the heavy lifting. But it removes doubt at the exact moment an engine decides whether you're safe to name. In our scans, businesses with complete, consistent markup are disproportionately represented in retrieval-backed answers.",
-          "Measure the effect yourself: run a free LLM Rank scan before and a few weeks after adding markup, and watch your mention rate.",
+          "Measure the effect yourself: run a free GetInTheAnswer scan before and a few weeks after adding markup, and watch your mention rate.",
         ],
       },
     ],

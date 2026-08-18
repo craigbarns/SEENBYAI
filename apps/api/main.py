@@ -19,7 +19,7 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "").strip()
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://llm-rank.app").rstrip("/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://getintheanswer.com").rstrip("/")
 LIVE_MODE = bool(OPENAI_API_KEY)
 BILLING_ENABLED = bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID)
 
@@ -27,8 +27,8 @@ if STRIPE_SECRET_KEY:
     stripe.api_key = STRIPE_SECRET_KEY
 
 app = FastAPI(
-    title="LLM Rank API",
-    description="Backend API for LLM Rank — AI visibility scans for local businesses",
+    title="GetInTheAnswer API",
+    description="Backend API for GetInTheAnswer — AI visibility scans for local businesses",
     version="2.0.0",
 )
 
@@ -579,7 +579,7 @@ async def rescan_report(site_id: str) -> None:
     request = OnboardingRequest(
         companyName=previous.company_name,
         websiteUrl=previous.website_url,
-        email=email or "rescan@llm-rank.app",
+        email=email or "rescan@getintheanswer.com",
         city=previous.city,
         industry=previous.industry,
         services=previous.services,

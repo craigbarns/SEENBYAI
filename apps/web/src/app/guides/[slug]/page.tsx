@@ -53,9 +53,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
-          <Link className="flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
+          <Link className="flex items-center gap-2.5" href="/" aria-label="GetInTheAnswer, home">
             <LogoMark className="size-9" />
-            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">GetInTheAnswer</span>
           </Link>
           <Button asChild className="ml-auto rounded-full px-5">
             <Link href="/onboarding">Free AI visibility scan <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
@@ -105,7 +105,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         <section className="mt-14 rounded-[1.75rem] bg-[#173b35] p-7 text-white sm:p-9">
           <h2 className="text-2xl font-extrabold tracking-[-0.035em]">How visible is your business in AI answers?</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-white/65">
-            Find out in minutes: LLM Rank asks the real questions your customers ask ChatGPT, Claude and Perplexity, and scores your visibility against your competitors. Free, no credit card.
+            Find out in minutes: GetInTheAnswer asks the real questions your customers ask ChatGPT, Claude and Perplexity, and scores your visibility against your competitors. Free, no credit card.
           </p>
           <Button asChild className="mt-6 h-12 rounded-full bg-lime-300 px-6 font-extrabold text-[#173b35] hover:bg-lime-200">
             <Link href="/onboarding">Run my free scan <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>

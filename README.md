@@ -1,4 +1,4 @@
-# LLM Rank (ex-SeenByAI)
+# GetInTheAnswer (ex-SeenByAI)
 
 **"Est-ce que l’IA recommande votre entreprise ?"**
 

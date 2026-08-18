@@ -20,9 +20,9 @@ export default function GuidesPage() {
     <div className="min-h-screen bg-[#f8f8f3]">
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
-          <Link className="flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
+          <Link className="flex items-center gap-2.5" href="/" aria-label="GetInTheAnswer, home">
             <LogoMark className="size-9" />
-            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">GetInTheAnswer</span>
           </Link>
           <Button asChild className="ml-auto rounded-full px-5">
             <Link href="/onboarding">Free AI visibility scan <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>

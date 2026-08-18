@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "LLM Rank — Is your business recommended by ChatGPT, Claude & Perplexity?";
+export const alt = "GetInTheAnswer — Is your business recommended by ChatGPT, Claude & Perplexity?";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -27,7 +27,7 @@ export default function OpengraphImage() {
             <rect x="21.25" y="17.5" width="5.5" height="13.5" rx="2.75" fill="#173b35" opacity="0.65" />
             <rect x="30.75" y="11" width="5.5" height="20" rx="2.75" fill="#173b35" />
           </svg>
-          <div style={{ color: "#ffffff", fontSize: 44, fontWeight: 800, letterSpacing: -2 }}>LLM Rank</div>
+          <div style={{ color: "#ffffff", fontSize: 44, fontWeight: 800, letterSpacing: -2 }}>GetInTheAnswer</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -51,7 +51,7 @@ export default function OpengraphImage() {
               borderRadius: 999,
             }}
           >
-            www.llm-rank.app
+            www.getintheanswer.com
           </div>
         </div>
       </div>

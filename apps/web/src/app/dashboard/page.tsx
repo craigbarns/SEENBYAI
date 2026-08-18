@@ -39,7 +39,7 @@ function maskName(name: string) {
 
 export const metadata: Metadata = {
   title: "AI Visibility Report",
-  description: "Your visibility score, mentions and LLM Rank action plan.",
+  description: "Your visibility score, mentions and GetInTheAnswer action plan.",
   robots: {
     index: false,
     follow: false,
@@ -124,9 +124,9 @@ export default async function DashboardPage({
     <div className="min-h-screen bg-[#f8f8f3] pb-20">
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
-          <Link className="flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
+          <Link className="flex items-center gap-2.5" href="/" aria-label="GetInTheAnswer, home">
             <LogoMark className="size-9" />
-            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">GetInTheAnswer</span>
           </Link>
           {data?.mode === "live" ? (
             <Badge variant="outline" className="ml-auto border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800">

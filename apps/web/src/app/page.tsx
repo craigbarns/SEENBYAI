@@ -38,7 +38,7 @@ const faqs = [
   {
     question: "Why doesn't ChatGPT recommend my business?",
     answer:
-      "AI engines recommend businesses with strong, consistent, verifiable signals: complete business profiles, steady reviews, answer-shaped website content and structured data. If those signals are weak or inconsistent, the AI names your competitors instead. Your LLM Rank report pinpoints which signals to fix first.",
+      "AI engines recommend businesses with strong, consistent, verifiable signals: complete business profiles, steady reviews, answer-shaped website content and structured data. If those signals are weak or inconsistent, the AI names your competitors instead. Your GetInTheAnswer report pinpoints which signals to fix first.",
   },
   {
     question: "How can I improve my AI visibility?",
@@ -88,7 +88,7 @@ const structuredData = {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       description:
-        "LLM Rank measures how visible a local business is in AI answers from ChatGPT, Claude and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
+        "GetInTheAnswer measures how visible a local business is in AI answers from ChatGPT, Claude and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
       offers: {
         "@type": "Offer",
         price: "0",
@@ -112,7 +112,7 @@ const steps = [
     number: "02",
     title: "We simulate the searches",
     description:
-      "LLM Rank measures your mentions and your competitors' across ChatGPT, Claude and Perplexity.",
+      "GetInTheAnswer measures your mentions and your competitors' across ChatGPT, Claude and Perplexity.",
   },
   {
     icon: ListChecks,
@@ -138,9 +138,9 @@ export default function Home() {
       />
       <header className="sticky top-0 z-50 border-b border-foreground/8 bg-[#f8f8f3]/88 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center px-5 sm:px-8 lg:px-10">
-          <Link className="group flex items-center gap-2.5" href="/" aria-label="LLM Rank, home">
+          <Link className="group flex items-center gap-2.5" href="/" aria-label="GetInTheAnswer, home">
             <LogoMark className="size-9 transition-transform group-hover:-rotate-3" />
-            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">GetInTheAnswer</span>
           </Link>
 
           <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Main navigation">
@@ -187,7 +187,7 @@ export default function Home() {
               </h1>
 
               <p className="mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
-                LLM Rank tests the queries that matter for your business, benchmarks your competitors and turns the results into concrete actions.
+                GetInTheAnswer tests the queries that matter for your business, benchmarks your competitors and turns the results into concrete actions.
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -437,11 +437,11 @@ export default function Home() {
 
       <footer className="border-t border-foreground/8 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-9 sm:px-8 md:flex-row md:items-center lg:px-10">
-          <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="LLM Rank, home">
+          <Link className="flex items-center gap-2 font-extrabold" href="/" aria-label="GetInTheAnswer, home">
             <LogoMark className="size-8" />
-            LLM Rank
+            GetInTheAnswer
           </Link>
-          <p className="text-sm text-muted-foreground md:ml-3">© 2026 LLM Rank. AI visibility, made actionable.</p>
+          <p className="text-sm text-muted-foreground md:ml-3">© 2026 GetInTheAnswer. AI visibility, made actionable.</p>
           <nav className="flex flex-wrap gap-5 text-sm font-semibold text-muted-foreground md:ml-auto" aria-label="Footer navigation">
             <Link className="hover:text-foreground" href="#method">How it works</Link>
             <Link className="hover:text-foreground" href="#pricing">Pricing</Link>

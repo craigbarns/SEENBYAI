@@ -107,9 +107,9 @@ export default function OnboardingPage() {
         <div className="pointer-events-none absolute -bottom-44 -right-24 size-[500px] rounded-full bg-emerald-300/10 blur-3xl" aria-hidden="true" />
 
         <div className="relative">
-          <Link className="inline-flex items-center gap-2.5" href="/" aria-label="LLM Rank, back to home">
+          <Link className="inline-flex items-center gap-2.5" href="/" aria-label="GetInTheAnswer, back to home">
             <LogoMark variant="on-dark" className="size-10" />
-            <span className="text-xl font-extrabold tracking-[-0.04em]">LLM Rank</span>
+            <span className="text-xl font-extrabold tracking-[-0.04em]">GetInTheAnswer</span>
           </Link>
 
           <div className="mt-20 max-w-lg">
@@ -143,7 +143,7 @@ export default function OnboardingPage() {
         <header className="flex h-[72px] items-center justify-between border-b border-foreground/8 px-5 sm:px-8 lg:px-10">
           <Link className="flex items-center gap-2 font-extrabold lg:hidden" href="/">
             <LogoMark className="size-9" />
-            LLM Rank
+            GetInTheAnswer
           </Link>
           <Link className="hidden items-center gap-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground lg:flex" href="/">
             <ArrowLeft className="size-4" aria-hidden="true" /> Back to home

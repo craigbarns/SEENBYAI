@@ -6,8 +6,8 @@ import { SITE_NAME, SITE_URL } from "@/lib/site";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "LLM Rank — Is Your Business Recommended by ChatGPT, Claude & Perplexity?",
-    template: "%s | LLM Rank",
+    default: "GetInTheAnswer — Is Your Business Recommended by ChatGPT, Claude & Perplexity?",
+    template: "%s | GetInTheAnswer",
   },
   description:
     "Check if AI engines like ChatGPT, Claude and Perplexity recommend your local business. Get your free AI visibility score, competitor benchmark and prioritized action plan in minutes.",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "LLM Rank — Is your business visible in AI answers?",
+    title: "GetInTheAnswer — Is your business visible in AI answers?",
     description:
       "Measure your visibility in ChatGPT, Claude and Perplexity in minutes. Free AI visibility score, no credit card required.",
     url: SITE_URL,
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "LLM Rank — Is your business visible in AI answers?",
+    title: "GetInTheAnswer — Is your business visible in AI answers?",
     description:
       "Measure your visibility in ChatGPT, Claude and Perplexity in minutes. Free AI visibility score, no credit card required.",
   },
