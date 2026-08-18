@@ -76,6 +76,7 @@ export default function OnboardingPage() {
     }
 
     setLoading(true);
+    window.gtag?.("event", "scan_started", { city: formData.city, industry: formData.industry });
 
     try {
       const response = await fetch("/api/onboarding", {
@@ -89,6 +90,7 @@ export default function OnboardingPage() {
         throw new Error(data.message ?? "We couldn't start the analysis right now.");
       }
 
+      window.gtag?.("event", "scan_completed", { site_id: data.site_id });
       router.push(`/dashboard?site_id=${encodeURIComponent(data.site_id)}`);
     } catch (submissionError) {
       setError(

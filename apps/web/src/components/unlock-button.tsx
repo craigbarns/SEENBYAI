@@ -18,6 +18,7 @@ export function UnlockButton({ siteId, className, size = "default", variant = "d
 
   const handleClick = async () => {
     setLoading(true);
+    window.gtag?.("event", "begin_checkout", { currency: "USD", value: 29, site_id: siteId });
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
