@@ -312,7 +312,8 @@ QUERY_GENERATION_SYSTEM_PROMPT = (
     "Write short, natural questions that local consumers would actually ask an AI assistant "
     "(like ChatGPT) when looking for this type of business in this city. "
     "Never mention the business name itself. Vary the intent: best, recommendation, "
-    "comparison, urgency, reviews, nearby. "
+    "comparison, urgency, reviews, nearby. Every query MUST explicitly name the city — "
+    'never use vague locations like "near me" or "close to home". '
     "CRITICAL: write the questions in the language consumers in that city most likely use "
     "(e.g. French for Marseille, English for Austin, Spanish for Madrid). "
     'Respond with JSON only: {"queries": ["...", "..."]}'
@@ -333,9 +334,11 @@ RECOMMENDATION_SYSTEM_PROMPT = (
 
 EXTRACTION_SYSTEM_PROMPT = (
     "You analyze AI assistant answers to local business recommendation questions. "
-    "For each numbered answer, list the specific business names explicitly mentioned "
-    "(company names only, not generic terms, directories or platforms like Yelp or Google), "
-    "and say whether the target brand is mentioned, including close or partial variants of its name. "
+    "For each numbered answer, list the specific competing business names explicitly mentioned. "
+    "Include only actual businesses a consumer could hire or visit — exclude generic terms, "
+    "review sites, directories, listing portals, marketplaces and aggregators of any industry "
+    "(e.g. Yelp, Google, TripAdvisor, SeLoger, Zillow, Booking, LeBonCoin, Angi, Thumbtack). "
+    "Also say whether the target brand is mentioned, including close or partial variants of its name. "
     'Respond with JSON only: {"results": [{"index": 1, "brand_mentioned": false, "businesses": ["..."]}]}'
 )
 
