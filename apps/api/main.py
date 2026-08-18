@@ -11,6 +11,7 @@ from collections import Counter, defaultdict, deque
 from typing import List, Optional
 from urllib.parse import urlsplit
 
+import httpx
 import stripe
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +27,8 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "").strip()
 PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+GA_MEASUREMENT_ID = os.getenv("GA_MEASUREMENT_ID", "").strip()
+GA_API_SECRET = os.getenv("GA_API_SECRET", "").strip()
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "").strip()
@@ -790,8 +793,6 @@ async def run_live_scan(site_id: str, request: OnboardingRequest) -> DashboardDa
         )
     gemini_client = None
     if GEMINI_API_KEY:
-        import httpx
-
         gemini_client = httpx.AsyncClient(timeout=90)
         engines.append(("Gemini", "gemini", gemini_client, 4))
 
@@ -1082,6 +1083,7 @@ async def onboard_site(payload: OnboardingRequest, http_request: Request):
 
 class CheckoutRequest(BaseModel):
     site_id: str
+    ga_client_id: Optional[str] = None
 
 
 class PortalRequest(BaseModel):
@@ -1109,7 +1111,7 @@ def create_checkout(body: CheckoutRequest):
         ),
         cancel_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}",
         customer_email=get_report_email(body.site_id),
-        metadata={"site_id": body.site_id},
+        metadata={"site_id": body.site_id, "ga_client_id": body.ga_client_id or ""},
         allow_promotion_codes=True,
     )
     return {"url": session.url}
@@ -1190,6 +1192,36 @@ def stripe_identifier(value) -> Optional[str]:
     return identifier if isinstance(identifier, str) else None
 
 
+async def report_ga_purchase(client_id: str, session_id: str, amount_total: Optional[int]) -> None:
+    # Server-side GA4 purchase event, fired from the webhook rather than the
+    # client redirect: it survives ad blockers and only fires on a Stripe-
+    # confirmed payment, which is what a Google Ads conversion needs.
+    if not (GA_MEASUREMENT_ID and GA_API_SECRET and client_id):
+        return
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                "https://www.google-analytics.com/mp/collect",
+                params={"measurement_id": GA_MEASUREMENT_ID, "api_secret": GA_API_SECRET},
+                json={
+                    "client_id": client_id,
+                    "events": [
+                        {
+                            "name": "purchase",
+                            "params": {
+                                "transaction_id": session_id,
+                                "value": (amount_total or 0) / 100,
+                                "currency": "USD",
+                                "items": [{"item_name": "GetInTheAnswer Pro Monitoring"}],
+                            },
+                        }
+                    ],
+                },
+            )
+    except Exception:
+        pass
+
+
 @app.post("/api/stripe/webhook")
 async def stripe_webhook(
     http_request: Request,
@@ -1227,6 +1259,15 @@ async def stripe_webhook(
                 stripe_identifier(subscription),
                 "active",
             )
+            ga_client_id = stripe_attribute(metadata, "ga_client_id")
+            if ga_client_id:
+                asyncio.create_task(
+                    report_ga_purchase(
+                        ga_client_id,
+                        stripe_attribute(stripe_object, "id", ""),
+                        stripe_attribute(stripe_object, "amount_total"),
+                    )
+                )
     elif event_type in {"customer.subscription.updated", "customer.subscription.deleted"}:
         subscription = stripe_attribute(stripe_object, "id")
         status = stripe_attribute(stripe_object, "status", "canceled")

@@ -277,7 +277,7 @@ export default function Home() {
                           <span className={`size-2 rounded-full ${engine.color}`} />
                           <span className="truncate">{engine.name}</span>
                         </div>
-                        <p className="text-lg font-black sm:text-xl">{engine.mentions}<span className="text-xs font-semibold text-white/45">/{engine.total}</span></p>
+                        <p className="text-lg font-black sm:text-xl">{engine.mentions}<span className="text-xs font-semibold text-white/75">/{engine.total}</span></p>
                       </div>
                     ))}
                   </div>

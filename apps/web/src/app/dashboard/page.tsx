@@ -187,12 +187,12 @@ export default async function DashboardPage({
               <div className="flex size-28 shrink-0 items-center justify-center rounded-full p-2" style={{ background: `conic-gradient(#bef264 ${safeScore * 3.6}deg, rgba(255,255,255,.12) 0deg)` }} aria-label={`Visibility score ${safeScore} out of 100`}>
                 <div className="flex size-full flex-col items-center justify-center rounded-full bg-[#173b35]">
                   <span className="text-4xl font-black tracking-[-0.06em]">{safeScore}</span>
-                  <span className="text-[11px] font-bold text-white/45">OUT OF 100</span>
+                  <span className="text-[11px] font-bold text-white/75">OUT OF 100</span>
                 </div>
               </div>
               <div className="max-w-56 sm:max-w-40">
                 <p className="font-extrabold text-lime-300">{scoreSummary.label}</p>
-                <p className="mt-2 text-sm leading-5 text-white/55">{scoreSummary.copy}</p>
+                <p className="mt-2 text-sm leading-5 text-white/75">{scoreSummary.copy}</p>
               </div>
             </div>
           </div>

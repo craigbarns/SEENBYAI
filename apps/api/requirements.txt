@@ -2,6 +2,7 @@ fastapi
 uvicorn
 openai
 anthropic
+httpx
 pydantic
 pydantic-settings
 sqlalchemy
