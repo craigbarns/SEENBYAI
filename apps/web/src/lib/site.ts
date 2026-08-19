@@ -2,4 +2,4 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://getintheans
 
 export const SITE_NAME = "GetInTheAnswer";
 
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-1KPP1X6JKN";
+export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-IKPP1X6JKN";
