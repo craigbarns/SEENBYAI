@@ -1141,7 +1141,7 @@ def create_checkout(body: CheckoutRequest):
             f"{FRONTEND_URL}/api/checkout/confirm?site_id={body.site_id}"
             "&session_id={CHECKOUT_SESSION_ID}"
         ),
-        cancel_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}",
+        cancel_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}&checkout=cancelled",
         customer_email=get_report_email(body.site_id),
         metadata={"site_id": body.site_id, "ga_client_id": body.ga_client_id or ""},
         allow_promotion_codes=True,
@@ -1244,7 +1244,14 @@ async def report_ga_purchase(client_id: str, session_id: str, amount_total: Opti
                                 "transaction_id": session_id,
                                 "value": (amount_total or 0) / 100,
                                 "currency": "USD",
-                                "items": [{"item_name": "GetInTheAnswer Pro Monitoring"}],
+                                "items": [
+                                    {
+                                        "item_id": "pro_monthly",
+                                        "item_name": "GetInTheAnswer Pro Monitoring",
+                                        "price": (amount_total or 0) / 100,
+                                        "quantity": 1,
+                                    }
+                                ],
                             },
                         }
                     ],

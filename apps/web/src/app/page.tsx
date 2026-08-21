@@ -169,7 +169,11 @@ export default function Home() {
           </nav>
 
           <Button asChild className="ml-auto rounded-full px-5 md:ml-7">
-            <Link href="/onboarding">
+            <Link
+              href="/onboarding"
+              data-analytics-event="select_content"
+              data-analytics-label="header_scan"
+            >
               <span className="hidden sm:inline">Analyze my business</span>
               <span className="sm:hidden">Analyze</span>
               <ArrowRight className="ml-2 size-4" aria-hidden="true" />
@@ -184,8 +188,8 @@ export default function Home() {
           <div className="pointer-events-none absolute -left-28 top-24 size-[420px] rounded-full bg-lime-200/35 blur-3xl" aria-hidden="true" />
           <div className="pointer-events-none absolute -right-32 top-8 size-[480px] rounded-full bg-emerald-200/30 blur-3xl" aria-hidden="true" />
 
-          <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:px-10 lg:py-24">
-            <div className="max-w-2xl animate-fade-in-up">
+          <div className="relative mx-auto grid min-w-0 max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:px-10 lg:py-24">
+            <div className="min-w-0 max-w-2xl animate-fade-in-up">
               <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/70 px-3.5 py-2 text-xs font-bold uppercase tracking-[0.12em] text-primary shadow-sm">
                 <Sparkles className="size-3.5 text-lime-600" aria-hidden="true" />
                 AI visibility for local businesses
@@ -202,13 +206,23 @@ export default function Home() {
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-14 rounded-full px-7 text-base shadow-lg shadow-primary/15">
-                  <Link href="/onboarding">
+                  <Link
+                    href="/onboarding"
+                    data-analytics-event="select_content"
+                    data-analytics-label="hero_free_scan"
+                  >
                     Start my free analysis
                     <ArrowRight className="ml-2 size-5" aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="h-14 rounded-full border-foreground/15 bg-white/60 px-7 text-base">
-                  <Link href="#demo">Explore a report</Link>
+                  <Link
+                    href="#demo"
+                    data-analytics-event="select_content"
+                    data-analytics-label="hero_sample_report"
+                  >
+                    Explore a report
+                  </Link>
                 </Button>
               </div>
 
@@ -219,7 +233,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-2xl animate-fade-in-up lg:mx-0" style={{ animationDelay: "120ms" }}>
+            <div className="relative mx-auto min-w-0 w-full max-w-2xl animate-fade-in-up lg:mx-0" style={{ animationDelay: "120ms" }}>
               <div className="absolute -inset-5 -rotate-2 rounded-[2.25rem] bg-primary/8" aria-hidden="true" />
               <div className="relative overflow-hidden rounded-[1.75rem] border border-foreground/10 bg-[#173b35] p-3 shadow-2xl shadow-primary/20 sm:p-4">
                 <div className="flex items-center justify-between px-3 py-2 text-primary-foreground/65">
@@ -345,7 +359,13 @@ export default function Home() {
                 The report connects every weakness it detects to an editorial or technical action, with a priority and an estimated impact.
               </p>
               <Button asChild size="lg" className="mt-8 h-13 rounded-full bg-lime-300 px-6 text-[#173b35] hover:bg-lime-200">
-                <Link href="/onboarding">Create my first report <ArrowRight className="ml-2 size-5" aria-hidden="true" /></Link>
+                <Link
+                  href="/onboarding"
+                  data-analytics-event="select_content"
+                  data-analytics-label="sample_report_scan"
+                >
+                  Create my first report <ArrowRight className="ml-2 size-5" aria-hidden="true" />
+                </Link>
               </Button>
             </div>
 
@@ -396,7 +416,13 @@ export default function Home() {
                 </div>
                 <div className="mt-auto border-t border-foreground/8 bg-[#f3f4ed] p-6">
                   <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full bg-white px-6">
-                    <Link href="/onboarding">Try it free <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
+                    <Link
+                      href="/onboarding"
+                      data-analytics-event="select_content"
+                      data-analytics-label="pricing_free"
+                    >
+                      Try it free <ArrowRight className="ml-2 size-4" aria-hidden="true" />
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -414,7 +440,13 @@ export default function Home() {
                 </div>
                 <div className="mt-auto border-t border-white/10 p-6">
                   <Button asChild size="lg" className="h-12 w-full rounded-full bg-lime-300 px-6 font-extrabold text-[#173b35] hover:bg-lime-200">
-                    <Link href="/onboarding">Start Pro scan <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
+                    <Link
+                      href="/onboarding"
+                      data-analytics-event="select_content"
+                      data-analytics-label="pricing_pro"
+                    >
+                      Start with a free scan <ArrowRight className="ml-2 size-4" aria-hidden="true" />
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -431,7 +463,13 @@ export default function Home() {
                 </div>
                 <div className="mt-auto border-t border-foreground/8 bg-[#f3f4ed] p-6">
                   <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full bg-white px-6">
-                    <Link href="/onboarding">Get Agency access <ArrowRight className="ml-2 size-4" aria-hidden="true" /></Link>
+                    <a
+                      href="mailto:gregory@wemade.fr?subject=GetInTheAnswer%20Agency"
+                      data-analytics-event="select_content"
+                      data-analytics-label="pricing_agency_contact"
+                    >
+                      Talk to us <ArrowRight className="ml-2 size-4" aria-hidden="true" />
+                    </a>
                   </Button>
                 </div>
               </div>

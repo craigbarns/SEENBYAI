@@ -8,7 +8,7 @@ import { SchemaGeneratorForm } from "@/components/schema-generator-form";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Free LocalBusiness Schema Generator for AI SEO (JSON-LD) — GetInTheAnswer",
+  title: "Free LocalBusiness Schema Generator for AI SEO (JSON-LD)",
   description:
     "Generate machine-readable LocalBusiness Schema.org JSON-LD markup optimized for ChatGPT, Claude, Gemini, and Perplexity recommendations. 100% Free.",
   alternates: {

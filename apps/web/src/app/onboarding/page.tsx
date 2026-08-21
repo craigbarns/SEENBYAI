@@ -71,6 +71,7 @@ export default function OnboardingPage() {
 
     const normalizedUrl = normalizeWebsiteUrl(formData.websiteUrl);
     if (!normalizedUrl) {
+      window.gtag?.("event", "scan_validation_error", { field: "website_url" });
       setError("Please check your website address, for example my-business.com.");
       return;
     }
@@ -91,9 +92,13 @@ export default function OnboardingPage() {
         throw new Error(data.message ?? "We couldn't start the analysis right now.");
       }
 
+      window.gtag?.("event", "generate_lead", {
+        lead_source: "free_ai_visibility_scan",
+      });
       window.gtag?.("event", "scan_completed", { site_id: data.site_id });
       router.push(`/dashboard?site_id=${encodeURIComponent(data.site_id)}`);
     } catch (submissionError) {
+      window.gtag?.("event", "scan_failed", { reason: "api_or_network" });
       setError(
         submissionError instanceof Error
           ? submissionError.message

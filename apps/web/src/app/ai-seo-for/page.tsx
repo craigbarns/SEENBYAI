@@ -8,7 +8,7 @@ import { industries } from "@/lib/industries";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "AI SEO & GEO Playbooks by Industry — GetInTheAnswer",
+  title: "AI SEO & GEO Playbooks by Industry",
   description:
     "Explore generative engine optimization playbooks tailored to your industry: Plumbers, Dentists, Lawyers, Real Estate, Restaurants, HVAC and more.",
   alternates: {

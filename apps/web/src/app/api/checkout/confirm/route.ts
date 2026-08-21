@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       return redirectTo(`${dashboardPath}&billing_error=confirmation`);
     }
 
-    const response = redirectTo(dashboardPath);
+    const response = redirectTo(`${dashboardPath}&checkout=success`);
     response.cookies.set({
       name: billingCookieName(siteId),
       value: sessionId,
