@@ -427,10 +427,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative flex flex-col overflow-hidden rounded-[1.75rem] bg-[#173b35] text-white shadow-xl shadow-primary/15">
-                <span className="absolute right-5 top-5 rounded-full bg-lime-300 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-[#173b35]">Most popular</span>
+              <div data-testid="pricing-pro-card" className="flex flex-col overflow-hidden rounded-[1.75rem] bg-[#173b35] text-white shadow-xl shadow-primary/15">
                 <div className="p-6 sm:p-7">
-                  <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-lime-300">Pro monitoring</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-lime-300">Pro monitoring</p>
+                    <span className="ml-auto shrink-0 rounded-full bg-lime-300 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-[#173b35]">Most popular</span>
+                  </div>
                   <div className="mt-2 flex items-end gap-2"><span className="text-4xl font-black tracking-[-0.06em]">$29</span><span className="pb-1 text-xs font-semibold text-white/60">/ month · cancel anytime</span></div>
                   <div className="mt-6 grid gap-3 text-sm font-semibold text-white/85">
                     {["Every competitor named", "The engines' actual answers, quoted", "Action plan from live AI answers", "Automatic weekly re-scans", "Score history over time"].map((item) => (
