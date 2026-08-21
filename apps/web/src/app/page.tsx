@@ -485,13 +485,13 @@ export default function Home() {
                 </div>
                 <div className="mt-auto border-t border-foreground/8 bg-[#f3f4ed] p-6">
                   <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full bg-white px-6">
-                    <a
-                      href="mailto:gregory@wemade.fr?subject=GetInTheAnswer%20Agency"
+                    <Link
+                      href="/contact"
                       data-analytics-event="select_content"
                       data-analytics-label="pricing_agency_contact"
                     >
                       Talk to us <ArrowRight className="ml-2 size-4" aria-hidden="true" />
-                    </a>
+                    </Link>
                   </Button>
                 </div>
               </div>

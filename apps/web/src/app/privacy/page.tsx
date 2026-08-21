@@ -28,6 +28,7 @@ export default function PrivacyPage() {
         <h2>Data we process</h2>
         <ul className="mt-4">
           <li>Business profile information: company name, work email, website, city, industry and services.</li>
+          <li>Agency inquiry information: contact name, work email, company, website, number of locations and message.</li>
           <li>Report information: questions, public AI answers, visibility metrics, recommendations and public website audit results.</li>
           <li>Billing references: Stripe customer, checkout and subscription identifiers. WEMADE does not receive full payment-card details.</li>
           <li>Technical information: IP address, request logs, security signals and optional analytics data.</li>
@@ -38,6 +39,7 @@ export default function PrivacyPage() {
         <h2>Purposes and legal bases</h2>
         <ul className="mt-4">
           <li>Generate, store and deliver requested reports, and administer subscriptions: steps before entering into a contract and performance of the contract.</li>
+          <li>Review and respond to agency and multi-location inquiries: steps before entering into a contract and WEMADE&apos;s legitimate interest in handling business requests.</li>
           <li>Protect the service, prevent excessive scans and diagnose incidents: WEMADE&apos;s legitimate interests in security and service reliability.</li>
           <li>Meet accounting, tax and legal duties: compliance with legal obligations.</li>
           <li>Measure audience and improve the product through Google Analytics: consent, which can be refused or withdrawn at any time.</li>
@@ -47,7 +49,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Recipients and service providers</h2>
         <p className="mt-3">
-          Access is limited to WEMADE and providers needed to operate the service: Railway for hosting, Stripe for payments, and the AI or website-analysis providers made available for a scan, which may include OpenAI, Anthropic, Perplexity and Firecrawl. Google receives analytics data only after consent.
+          Access is limited to WEMADE and providers needed to operate the service: Railway for hosting, Resend for transactional email, Stripe for payments, and the AI or website-analysis providers made available for a scan, which may include OpenAI, Anthropic, Perplexity and Firecrawl. Google receives analytics data only after consent.
         </p>
         <p className="mt-3">
           Some providers process data in the United States or other countries outside the European Economic Area. These transfers rely on an applicable adequacy decision, the EU–US Data Privacy Framework where available, or European Commission standard contractual clauses.
@@ -58,6 +60,7 @@ export default function PrivacyPage() {
         <h2>Retention</h2>
         <ul className="mt-4">
           <li>Free reports and their business contact data are retained while the report remains available or until a valid deletion request is completed.</li>
+          <li>Agency inquiries are retained for the time needed to respond and manage any resulting commercial relationship, then only for applicable legal or claims periods.</li>
           <li>Paid report data is retained for the subscription relationship and then for the period needed to handle claims and legal obligations.</li>
           <li>Invoices and accounting records are retained for the legally required period.</li>
           <li>Security and technical logs are retained only for the period reasonably needed to investigate incidents and operate the service.</li>
