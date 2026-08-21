@@ -7,6 +7,7 @@ env var is set — no redeploy-time branching needed.
 """
 
 import os
+from html import escape
 from typing import Optional
 
 import httpx
@@ -18,19 +19,70 @@ NOTIFY_ADDRESS = os.getenv("NOTIFY_EMAIL", "").strip()
 RESEND_ENDPOINT = "https://api.resend.com/emails"
 
 
-async def send_email(to: str, subject: str, html: str) -> bool:
+async def send_email(to: str, subject: str, html: str, reply_to: Optional[str] = None) -> bool:
     if not RESEND_API_KEY:
         return False
     try:
+        payload = {"from": FROM_ADDRESS, "to": [to], "subject": subject, "html": html}
+        if reply_to:
+            payload["reply_to"] = reply_to
+
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.post(
                 RESEND_ENDPOINT,
                 headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
-                json={"from": FROM_ADDRESS, "to": [to], "subject": subject, "html": html},
+                json=payload,
             )
             return response.status_code < 400
     except Exception:
         return False
+
+
+def agency_inquiry_email(
+    full_name: str,
+    work_email: str,
+    company_name: str,
+    website_url: Optional[str],
+    location_count: int,
+    message: Optional[str],
+) -> tuple[str, str]:
+    safe_company = " ".join(company_name.split())
+    subject = f"Agency inquiry: {safe_company} ({location_count} locations)"
+
+    def safe(value: Optional[str], fallback: str = "Not provided") -> str:
+        if not value or not value.strip():
+            return fallback
+        return escape(value.strip()).replace("\n", "<br>")
+
+    website = safe(website_url)
+    website_row = (
+        f'<a href="{website}" rel="noreferrer">{website}</a>'
+        if website_url
+        else website
+    )
+    html = f"""
+    <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:620px;color:#173b35;">
+      <div style="background:#173b35;padding:24px 28px;border-radius:16px 16px 0 0;">
+        <span style="color:#bef264;font-weight:800;font-size:20px;">GetInTheAnswer</span>
+      </div>
+      <div style="background:#f8f8f3;padding:28px;border-radius:0 0 16px 16px;">
+        <h1 style="font-size:22px;margin:0 0 20px;">New agency inquiry</h1>
+        <table style="border-collapse:collapse;width:100%;line-height:1.5;">
+          <tr><td style="padding:6px 16px 6px 0;color:#66736f;">Name</td><td><b>{safe(full_name)}</b></td></tr>
+          <tr><td style="padding:6px 16px 6px 0;color:#66736f;">Work email</td><td>{safe(work_email)}</td></tr>
+          <tr><td style="padding:6px 16px 6px 0;color:#66736f;">Company</td><td>{safe(company_name)}</td></tr>
+          <tr><td style="padding:6px 16px 6px 0;color:#66736f;">Locations</td><td>{location_count}</td></tr>
+          <tr><td style="padding:6px 16px 6px 0;color:#66736f;">Website</td><td>{website_row}</td></tr>
+        </table>
+        <div style="margin-top:22px;padding-top:20px;border-top:1px solid #dfe4dc;">
+          <p style="margin:0 0 8px;color:#66736f;">Goals or context</p>
+          <p style="margin:0;line-height:1.65;">{safe(message)}</p>
+        </div>
+        <p style="margin:24px 0 0;font-size:13px;color:#66736f;">Reply to this email to answer the prospect directly.</p>
+      </div>
+    </div>
+    """
+    return subject, html
 
 
 def report_ready_email(company_name: str, dashboard_url: str) -> tuple[str, str]:
