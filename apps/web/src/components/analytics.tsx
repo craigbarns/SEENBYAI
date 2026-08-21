@@ -13,6 +13,7 @@ const CONSENT_KEY = "seenbyai_analytics_consent";
 export function Analytics() {
   const [consent, setConsent] = useState<Consent>(null);
   const [ready, setReady] = useState(false);
+  const [analyticsReady, setAnalyticsReady] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -31,15 +32,71 @@ export function Analytics() {
     };
   }, []);
 
-  if (!GA_MEASUREMENT_ID) return null;
-
   const choose = (value: Exclude<Consent, null>) => {
+    if (value === "rejected") {
+      window.gtag?.("consent", "update", {
+        analytics_storage: "denied",
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+      });
+      setAnalyticsReady(false);
+    }
     window.localStorage.setItem(CONSENT_KEY, value);
     setConsent(value);
   };
 
+  useEffect(() => {
+    if (consent !== "accepted" || !analyticsReady || !window.gtag) return;
+
+    const trackAnnotatedClick = (event: MouseEvent) => {
+      const target = event.target instanceof Element
+        ? event.target.closest<HTMLElement>("[data-analytics-event]")
+        : null;
+      if (!target) return;
+
+      const eventName = target.dataset.analyticsEvent;
+      if (!eventName) return;
+
+      window.gtag?.("event", eventName, {
+        content_type: target.dataset.analyticsType ?? "cta",
+        item_id: target.dataset.analyticsLabel ?? "unknown",
+        link_url: target instanceof HTMLAnchorElement ? target.href : undefined,
+      });
+    };
+
+    document.addEventListener("click", trackAnnotatedClick);
+    return () => document.removeEventListener("click", trackAnnotatedClick);
+  }, [analyticsReady, consent]);
+
+  if (!GA_MEASUREMENT_ID) return null;
+
   return (
     <>
+      {consent === "accepted" && (
+        <>
+          <Script id="google-analytics-consent" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('consent', 'default', {
+                analytics_storage: 'granted',
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied'
+              });
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}');
+            `}
+          </Script>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            strategy="afterInteractive"
+            onReady={() => setAnalyticsReady(true)}
+          />
+        </>
+      )}
 
       {ready && consent === null && (
         <aside

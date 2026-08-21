@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { LogoMark } from "@/components/logo";
+import { BillingStatusBanner } from "@/components/billing-status-banner";
 import { ManageSubscriptionButton } from "@/components/manage-subscription-button";
 import { ShareScoreButton } from "@/components/share-score-button";
 import { UnlockButton } from "@/components/unlock-button";
@@ -77,13 +78,22 @@ function getScoreSummary(score: number) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ site_id?: string | string[]; session_id?: string | string[] }>;
+  searchParams: Promise<{
+    site_id?: string | string[];
+    session_id?: string | string[];
+    checkout?: string | string[];
+    billing_error?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
   const siteIdParam = params.site_id;
   const siteId = Array.isArray(siteIdParam) ? siteIdParam[0] : siteIdParam;
   const sessionIdParam = params.session_id;
   const sessionId = Array.isArray(sessionIdParam) ? sessionIdParam[0] : sessionIdParam;
+  const checkoutParam = params.checkout;
+  const checkout = Array.isArray(checkoutParam) ? checkoutParam[0] : checkoutParam;
+  const billingErrorParam = params.billing_error;
+  const billingError = Array.isArray(billingErrorParam) ? billingErrorParam[0] : billingErrorParam;
 
   if (!siteId) redirect("/onboarding");
 
@@ -126,6 +136,13 @@ export default async function DashboardPage({
     const mentions = queries.filter((query) => query.brand_mentioned).length;
     return { engine, mentions, total: queries.length, rate: queries.length ? Math.round((mentions / queries.length) * 100) : 0 };
   });
+  const billingStatus = billingError
+    ? "confirmation_error"
+    : checkout === "success" && data.unlocked
+      ? "success"
+      : checkout === "cancelled"
+        ? "cancelled"
+        : null;
 
   return (
     <div className="min-h-screen bg-[#f8f8f3] pb-20">
@@ -163,6 +180,8 @@ export default async function DashboardPage({
           <span className="text-foreground/20">/</span>
           <span className="text-foreground">Report for {data.company_name}</span>
         </div>
+
+        {billingStatus && <BillingStatusBanner siteId={data.site_id} status={billingStatus} />}
 
         <section className="relative overflow-hidden rounded-[2rem] bg-[#173b35] p-6 text-white shadow-xl shadow-primary/10 sm:p-9 lg:p-10">
           <div className="pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-lime-300/12 blur-3xl" aria-hidden="true" />
@@ -225,7 +244,7 @@ export default async function DashboardPage({
               </div>
             </div>
             <div className="shrink-0 text-center">
-              <UnlockButton siteId={data.site_id} className="h-12 rounded-full px-6 font-extrabold">Unlock full report — {PLAN_PRICE}</UnlockButton>
+              <UnlockButton siteId={data.site_id} placement="report_top" className="h-12 rounded-full px-6 font-extrabold">Unlock full report — {PLAN_PRICE}</UnlockButton>
               <p className="mt-2 text-[11px] text-muted-foreground">
                 Professional subscription. By continuing, you accept the{" "}
                 <Link className="font-bold underline" href="/terms">terms</Link>.
@@ -306,7 +325,7 @@ export default async function DashboardPage({
                   <span className="flex items-center gap-2 font-bold text-muted-foreground">
                     <LockKeyhole className="size-4" aria-hidden="true" /> {data.site_audit.checks.length - 2} more website checks are hidden in the preview
                   </span>
-                  <UnlockButton siteId={data.site_id} size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
+                  <UnlockButton siteId={data.site_id} placement="website_audit" size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
                 </div>
               )}
             </div>
@@ -341,7 +360,7 @@ export default async function DashboardPage({
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
             {data.recommendations.map((recommendation, index) =>
-              data.unlocked ? (
+              data.unlocked || index === 0 ? (
                 <article className="flex flex-col rounded-[1.5rem] border border-foreground/8 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1" key={recommendation.title}>
                   <div className="flex items-start justify-between gap-4">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{index + 1}</span>
@@ -360,7 +379,7 @@ export default async function DashboardPage({
                   <h3 className="mt-6 text-xl font-extrabold tracking-[-0.025em] text-muted-foreground">Recommendation #{index + 1}</h3>
                   <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">Unlock the full report to reveal this action, its priority and its expected impact on your AI visibility.</p>
                   <div className="mt-6 border-t border-foreground/8 pt-4">
-                    <UnlockButton siteId={data.site_id} size="sm" variant="outline" className="w-full rounded-full">Unlock — {PLAN_PRICE}</UnlockButton>
+                    <UnlockButton siteId={data.site_id} placement={`recommendation_${index + 1}`} size="sm" variant="outline" className="w-full rounded-full">Unlock — {PLAN_PRICE}</UnlockButton>
                   </div>
                 </article>
               ),
@@ -379,7 +398,7 @@ export default async function DashboardPage({
                     <TableRow className="hover:bg-[#f8f8f3]" key={`${query.engine}-${query.query}-${index}`}>
                       <TableCell className="px-6 py-4 font-semibold leading-6">
                         {query.query}
-                        {data.unlocked && query.answer_excerpt && (
+                        {(data.unlocked || index === 0) && query.answer_excerpt && (
                           <details className="group mt-2">
                             <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 [&::-webkit-details-marker]:hidden">
                               <ChevronRight className="size-3 transition-transform group-open:rotate-90" aria-hidden="true" />
@@ -401,7 +420,7 @@ export default async function DashboardPage({
                       <TableCell colSpan={4} className="p-0">
                         <div className="flex flex-col items-center justify-center gap-3 bg-[#f8f8f3] px-6 py-8 sm:flex-row sm:gap-5">
                           <span className="flex items-center gap-2 font-bold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden="true" /> {data.queries.length - 3} more answer checks — plus what each AI actually said — are hidden in the preview</span>
-                          <UnlockButton siteId={data.site_id} size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
+                          <UnlockButton siteId={data.site_id} placement="scan_data" size="sm" className="rounded-full px-5">Unlock full report — {PLAN_PRICE}</UnlockButton>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -15,16 +15,37 @@ export function ShareScoreButton({ companyName, score, city, siteId }: ShareScor
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const reportUrl = typeof window !== "undefined" ? `${window.location.origin}/dashboard?site_id=${encodeURIComponent(siteId)}` : `https://www.getintheanswer.com/dashboard?site_id=${encodeURIComponent(siteId)}`;
+  const buildReportUrl = (source: string) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://www.getintheanswer.com";
+    const url = new URL("/dashboard", origin);
+    url.searchParams.set("site_id", siteId);
+    url.searchParams.set("utm_source", source);
+    url.searchParams.set("utm_medium", "referral");
+    url.searchParams.set("utm_campaign", "score_share");
+    return url.toString();
+  };
+
+  const linkedinReportUrl = buildReportUrl("linkedin");
+  const twitterReportUrl = buildReportUrl("x");
+  const copiedReportUrl = buildReportUrl("copy_link");
 
   const shareText = `We tested how visible ${companyName} (${city}) is across ChatGPT, Claude & Perplexity with @GetInTheAnswer. Our AI Visibility Score is ${score}/100! 🚀 Check your local AI ranking:`;
 
-  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(reportUrl)}`;
-  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(reportUrl)}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(twitterReportUrl)}`;
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(linkedinReportUrl)}`;
+
+  const trackShare = (method: string) => {
+    window.gtag?.("event", "share", {
+      method,
+      content_type: "ai_visibility_report",
+      item_id: siteId,
+    });
+  };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(reportUrl);
+      await navigator.clipboard.writeText(copiedReportUrl);
+      trackShare("copy_link");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -54,6 +75,7 @@ export function ShareScoreButton({ companyName, score, city, siteId }: ShareScor
               href={linkedinUrl}
               target="_blank"
               rel="noreferrer"
+              onClick={() => trackShare("linkedin")}
               className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition-colors hover:bg-[#f8f8f3]"
             >
               <span>Share on LinkedIn</span>
@@ -63,6 +85,7 @@ export function ShareScoreButton({ companyName, score, city, siteId }: ShareScor
               href={twitterUrl}
               target="_blank"
               rel="noreferrer"
+              onClick={() => trackShare("x")}
               className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition-colors hover:bg-[#f8f8f3]"
             >
               <span>Share on X / Twitter</span>
