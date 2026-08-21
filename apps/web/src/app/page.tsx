@@ -60,6 +60,11 @@ const faqs = [
     answer:
       "We use the business profile you submit, the public content on your homepage and the answers returned by the AI providers to build your report. Your email associates the report with checkout if you upgrade. We do not sell your information.",
   },
+  {
+    question: "Will I be charged US sales tax?",
+    answer:
+      "If sales tax applies, Stripe calculates it from your billing address and shows the exact amount before you subscribe. You always see the full total before confirming payment.",
+  },
 ];
 
 const structuredData = {
@@ -99,12 +104,27 @@ const structuredData = {
       operatingSystem: "Web",
       description:
         "GetInTheAnswer measures how visible a local business is in AI answers from ChatGPT, Claude, Gemini and Perplexity, benchmarks competitors and delivers a prioritized action plan.",
-      offers: {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "USD",
-        description: "Free discovery scan — 10 tailored customer questions tested across up to 4 AI engines, no credit card required.",
-      },
+      offers: [
+        {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+          description: "Free discovery scan — 10 tailored customer questions tested across up to 4 AI engines, no credit card required.",
+        },
+        {
+          "@type": "Offer",
+          name: "Pro Monitoring",
+          url: `${SITE_URL}/#pricing`,
+          price: "29",
+          priceCurrency: "USD",
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: "29",
+            priceCurrency: "USD",
+            unitText: "MONTH",
+          },
+        },
+      ],
     },
   ],
 };
@@ -338,7 +358,7 @@ export default function Home() {
             <div className="mt-12 grid gap-5 lg:grid-cols-3">
               {steps.map(({ icon: Icon, number, title, description }) => (
                 <article className="group relative overflow-hidden rounded-3xl border border-foreground/10 bg-[#f8f8f3] p-7 transition-transform hover:-translate-y-1" key={number}>
-                  <span className="absolute right-5 top-3 text-7xl font-black tracking-[-0.08em] text-primary/6">{number}</span>
+                  <span className="absolute right-6 top-6 text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Step {number}</span>
                   <span className="relative flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
@@ -429,9 +449,9 @@ export default function Home() {
 
               <div data-testid="pricing-pro-card" className="flex flex-col overflow-hidden rounded-[1.75rem] bg-[#173b35] text-white shadow-xl shadow-primary/15">
                 <div className="p-6 sm:p-7">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <div className="flex flex-col items-start gap-2 xl:flex-row xl:items-center xl:justify-between">
                     <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-lime-300">Pro monitoring</p>
-                    <span className="ml-auto shrink-0 rounded-full bg-lime-300 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-[#173b35]">Most popular</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-lime-300 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-[#173b35]">Most popular</span>
                   </div>
                   <div className="mt-2 flex items-end gap-2"><span className="text-4xl font-black tracking-[-0.06em]">$29</span><span className="pb-1 text-xs font-semibold text-white/60">/ month · cancel anytime</span></div>
                   <div className="mt-6 grid gap-3 text-sm font-semibold text-white/85">
@@ -476,6 +496,9 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            <p className="mx-auto mt-6 max-w-3xl text-sm font-semibold text-muted-foreground">
+              All prices are in USD. Pro payments are processed securely by Stripe, applicable US sales tax is calculated at checkout, and you can cancel online anytime.
+            </p>
           </div>
         </section>
         <section id="faq" className="scroll-mt-20 border-t border-foreground/8 bg-white py-20 sm:py-28" aria-label="Frequently asked questions">

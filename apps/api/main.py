@@ -34,6 +34,7 @@ GA_API_SECRET = os.getenv("GA_API_SECRET", "").strip()
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "").strip()
+STRIPE_CHECKOUT_LOCALE = os.getenv("STRIPE_CHECKOUT_LOCALE", "en").strip() or "en"
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://getintheanswer.com").rstrip("/")
 LIVE_MODE = bool(OPENAI_API_KEY)
 BILLING_ENABLED = bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID)
@@ -1134,18 +1135,32 @@ def create_checkout(body: CheckoutRequest):
     if load_report(body.site_id) is None:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    session = stripe.checkout.Session.create(
-        mode="subscription",
-        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-        success_url=(
-            f"{FRONTEND_URL}/api/checkout/confirm?site_id={body.site_id}"
-            "&session_id={CHECKOUT_SESSION_ID}"
-        ),
-        cancel_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}&checkout=cancelled",
-        customer_email=get_report_email(body.site_id),
-        metadata={"site_id": body.site_id, "ga_client_id": body.ga_client_id or ""},
-        allow_promotion_codes=True,
-    )
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            success_url=(
+                f"{FRONTEND_URL}/api/checkout/confirm?site_id={body.site_id}"
+                "&session_id={CHECKOUT_SESSION_ID}"
+            ),
+            cancel_url=f"{FRONTEND_URL}/dashboard?site_id={body.site_id}&checkout=cancelled",
+            client_reference_id=body.site_id,
+            customer_email=get_report_email(body.site_id),
+            locale=STRIPE_CHECKOUT_LOCALE,
+            automatic_tax={"enabled": True},
+            billing_address_collection="required",
+            branding_settings={
+                "display_name": "GetInTheAnswer",
+                "background_color": "#f8f8f3",
+                "button_color": "#173b35",
+                "font_family": "inter",
+            },
+            metadata={"site_id": body.site_id, "ga_client_id": body.ga_client_id or ""},
+            subscription_data={"metadata": {"site_id": body.site_id}},
+            allow_promotion_codes=True,
+        )
+    except stripe.error.StripeError as exc:
+        raise HTTPException(status_code=502, detail="Checkout is temporarily unavailable") from exc
     return {"url": session.url}
 
 
